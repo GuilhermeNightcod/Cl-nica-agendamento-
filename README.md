@@ -254,3 +254,10 @@ docker run --rm -v central-odonto_prontuarios:/dados -v "$PWD":/destino alpine t
 - [ ] IA para entender mensagens livres ("meu dente quebrou" → área certa)
 - [ ] Hospedagem em servidor com domínio, HTTPS e backup automático
 - [ ] Para vender a outras clínicas: separar os dados por clínica (multi-clínica)
+
+---
+
+## Licença
+
+Software proprietário: **todos os direitos reservados** (veja [`LICENSE`](LICENSE)).
+Os componentes de código aberto usados continuam sob as suas próprias licenças ([`THIRD_PARTY.md`](THIRD_PARTY.md)).

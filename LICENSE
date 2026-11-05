@@ -1,0 +1,22 @@
+Copyright (c) 2026 GuilhermeNightcod. Todos os direitos reservados.
+
+Central Odonto — sistema de atendimento, agenda e prontuário para clínicas-escola de Odontologia.
+
+Este software, incluindo código-fonte, documentação, telas, textos e demais materiais
+deste repositório, é de propriedade exclusiva do titular acima.
+
+É PROIBIDO, sem autorização prévia e por escrito do titular:
+  - copiar, reproduzir ou distribuir este software, no todo ou em parte;
+  - modificar, adaptar ou criar obras derivadas;
+  - vender, licenciar, sublicenciar, alugar ou oferecer como serviço (SaaS) a terceiros;
+  - usar este software para fins comerciais.
+
+O acesso a este repositório não concede nenhuma licença ou direito de uso, exceto quando
+houver contrato ou autorização escrita do titular.
+
+COMPONENTES DE TERCEIROS
+Este software usa bibliotecas e recursos de código aberto que continuam regidos por suas
+próprias licenças (veja THIRD_PARTY.md). Esta licença não se aplica a eles.
+
+O SOFTWARE É FORNECIDO "NO ESTADO EM QUE SE ENCONTRA", SEM GARANTIAS DE QUALQUER TIPO.
+Contato para licenciamento: pelo perfil https://github.com/GuilhermeNightcod
