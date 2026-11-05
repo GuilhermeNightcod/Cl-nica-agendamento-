@@ -173,3 +173,31 @@ def test_todas_as_telas_abrem(cliente):
     for url in ["/agenda", "/agenda?turma=8º semestre", "/agendar", "/agendar?busca=a", "/pacientes", "/pacientes/novo",
                 "/espera", "/painel", "/clinicas", "/acessos"]:
         assert cliente.get(url).status_code == 200, url
+
+
+def test_duplas_boxes_e_turmas_na_mesma_clinica(cliente):
+    from app.agenda import uso_de_boxes
+    from app.models import EspacoClinico
+    entrar(cliente, "coord", "senha")
+    with sessao() as s:
+        esp = s.scalar(select(EspacoClinico))
+        sid = s.scalar(select(SessaoClinica.id).where(SessaoClinica.turma == "8º semestre", SessaoClinica.dia_semana == 1))
+        esp_id, esp_nome = esp.id, esp.nome
+    cliente.post("/clinicas/espaco", data={"espaco_id": esp_id, "nome": esp_nome, "boxes": "20"})
+    with sessao() as s:
+        se = s.get(SessaoClinica, sid)
+        areas = [str(e.id) for e in se.especialidades]
+        dados = {"turma": se.turma, "nome": se.nome, "professor": se.professor, "dia_semana": "1", "hora_inicio": "19:00",
+                 "hora_fim": "22:00", "vagas": "99", "alunos": "25", "pacientes_por_dupla": "1", "espaco": esp_nome,
+                 "areas": areas, "ativa": "1"}
+    cliente.post(f"/clinicas/{sid}", data=dados)  # 25 alunos -> 13 duplas -> 13 vagas (ignora o 99)
+    with sessao() as s:
+        se = s.get(SessaoClinica, sid)
+        assert se.duplas == 13 and se.vagas == 13
+        assert all(v.capacidade == 13 for v in s.scalars(select(Vaga).where(Vaga.sessao_id == sid)))
+        # 10º semestre também atende terça no mesmo horário e na mesma clínica física
+        dez = s.scalar(select(SessaoClinica).where(SessaoClinica.turma == "10º semestre", SessaoClinica.dia_semana == 1))
+        dez.alunos = 16  # 8 duplas -> 13 + 8 = 21 > 20 boxes
+        terca = [u for u in uso_de_boxes(list(s.scalars(select(SessaoClinica)))) if u["dia"] == 1][0]
+        assert terca["duplas"] == 21 and terca["excede"] and terca["turmas"] == ["8º semestre", "10º semestre"]
+    assert "falta 1 box" in cliente.get("/clinicas").text or "Uso de boxes" in cliente.get("/clinicas").text

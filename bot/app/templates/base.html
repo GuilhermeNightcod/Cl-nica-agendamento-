@@ -3,91 +3,41 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{% block titulo %}{% endblock %} · {{ config.NOME_CLINICA }}</title>
-<style>
-  :root { --azul:#0f5c8c; --azul-claro:#e8f1f8; --cinza:#f3f5f7; --borda:#dde3e8; --texto:#1d2a33; --suave:#5b6b76;
-          --verde:#1b7f4b; --verde-claro:#e3f4ea; --vermelho:#b42318; --vermelho-claro:#fde8e6; --amarelo:#a15c07; --amarelo-claro:#fff3dc; }
-  * { box-sizing:border-box; }
-  body { margin:0; font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; color:var(--texto); background:var(--cinza); font-size:15px; }
-  a { color:var(--azul); }
-  .lateral { position:fixed; inset:0 auto 0 0; width:208px; background:#13294b; color:#c9d4e5; display:flex; flex-direction:column; padding:12px 10px; gap:2px; z-index:10; overflow-y:auto; }
-  .lateral .marca { color:#fff; font-weight:700; font-size:14px; display:flex; gap:8px; align-items:center; padding:6px 8px 14px; line-height:1.2; }
-  .lateral .marca { font-size:13px; } .lateral .marca:first-letter { font-size:20px; }
-  .lateral a { color:#c9d4e5; text-decoration:none; display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:8px; font-size:14px; position:relative; }
-  .lateral a:hover { background:rgba(255,255,255,.07); color:#fff; }
-  .lateral a.ativo { background:#1f4b8f; color:#fff; }
-  .lateral .selo { margin-left:auto; background:#22c55e; color:#fff; border-radius:99px; font-size:11px; padding:1px 7px; }
-  .lateral .rodape { margin-top:auto; border-top:1px solid rgba(255,255,255,.1); padding-top:10px; }
-  .lateral .quem { display:flex; gap:10px; align-items:center; padding:6px 8px; color:#fff; font-size:13px; }
-  .lateral .quem b { width:30px; height:30px; border-radius:50%; background:#3b5bdb; display:flex; align-items:center; justify-content:center; }
-  .lateral .quem small { display:block; color:#8fa3c2; font-size:11px; }
-  main.com-lateral { margin-left:208px; }
-  @media (max-width:800px) {
-    .lateral { position:static; width:auto; flex-direction:row; flex-wrap:wrap; padding:8px; }
-    .lateral .marca, .lateral .rodape .quem { display:none; } .lateral .rodape { margin:0; border:0; padding:0; }
-    .lateral a span { display:none; } main.com-lateral { margin-left:0; }
-  }
-  main { padding:22px 26px; max-width:1400px; }
-  main.largo { max-width:none; }
-  h1 { font-size:22px; margin:0 0 4px; } h2 { font-size:17px; margin:0 0 12px; } h3 { font-size:15px; margin:0 0 8px; }
-  .sub { color:var(--suave); margin:0 0 18px; }
-  .caixa { background:#fff; border:1px solid var(--borda); border-radius:10px; padding:16px; margin-bottom:18px; }
-  .linha { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
-  .entre { justify-content:space-between; }
-  .grade2 { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
-  @media (max-width:860px) { .grade2 { grid-template-columns:1fr; } }
-  table { width:100%; border-collapse:collapse; }
-  th, td { text-align:left; padding:8px; border-bottom:1px solid var(--borda); vertical-align:top; }
-  th { font-size:12px; text-transform:uppercase; color:var(--suave); letter-spacing:.02em; }
-  .tabela { overflow-x:auto; }
-  label { display:block; font-size:13px; color:var(--suave); margin-bottom:4px; }
-  input, select, textarea { font:inherit; padding:8px 10px; border:1px solid var(--borda); border-radius:6px; background:#fff; width:100%; }
-  textarea { min-height:70px; }
-  .campos { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin-bottom:12px; }
-  .btn { display:inline-block; font:inherit; font-size:14px; padding:8px 14px; border-radius:6px; border:1px solid var(--azul); background:var(--azul); color:#fff; cursor:pointer; text-decoration:none; white-space:nowrap; }
-  .btn.sec { background:#fff; color:var(--azul); }
-  .btn.peq { font-size:12px; padding:4px 9px; }
-  .btn.perigo { background:#fff; color:var(--vermelho); border-color:var(--vermelho); }
-  form.inline { display:inline; }
-  .tag { display:inline-block; padding:2px 8px; border-radius:99px; font-size:12px; background:var(--cinza); white-space:nowrap; }
-  .agendado { background:var(--amarelo-claro); color:var(--amarelo); }
-  .confirmado, .compareceu { background:var(--verde-claro); color:var(--verde); }
-  .faltou, .bloq { background:var(--vermelho-claro); color:var(--vermelho); }
-  .cancelado { background:var(--cinza); color:var(--suave); text-decoration:line-through; }
-  .aviso { padding:10px 14px; border-radius:8px; margin-bottom:16px; }
-  .aviso.ok { background:var(--verde-claro); color:var(--verde); }
-  .aviso.erro { background:var(--vermelho-claro); color:var(--vermelho); }
-  .vazio { color:var(--suave); }
-  small, .suave { color:var(--suave); }
-  .check { display:flex; gap:6px; align-items:center; font-size:14px; color:var(--texto); }
-  .check input { width:auto; }
-</style>
+<meta name="theme-color" content="#1f4f47">
+<title>{% block titulo %}{% endblock %} — Central Odonto</title>
+<link rel="preload" href="/static/fontes/atkinson-next-normal-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/static/estilo.css">
 {% block cabeca %}{% endblock %}
 </head>
 <body>
 {% if usuario %}
 {% set atual = request.url.path %}
 <aside class="lateral">
-  <div class="marca">🦷<span>{{ config.NOME_CLINICA }}</span></div>
-  <a href="/agenda" class="{{ 'ativo' if atual == '/agenda' or atual.startswith('/agenda/') }}"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>Agenda</span></a>
-  <a href="/atendimentos" class="{{ 'ativo' if atual.startswith('/atendimentos') }}"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 4z"/><path d="M8 9h8M8 12h5"/></svg><span>Atendimentos</span>{% if fila_count %}<b class="selo">{{ fila_count }}</b>{% endif %}</a>
-  <a href="/agendar" class="{{ 'ativo' if atual.startswith('/agendar') }}"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg><span>Agendar</span></a>
-  <a href="/pacientes" class="{{ 'ativo' if atual.startswith('/pacientes') }}"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14c2 .7 3.5 2.8 3.5 6"/></svg><span>Pacientes</span></a>
-  <a href="/espera" class="{{ 'ativo' if atual.startswith('/espera') }}"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>Lista de espera</span></a>
-  <a href="/painel" class="{{ 'ativo' if atual.startswith('/painel') }}"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Indicadores</span></a>
+  <a class="marca" href="/agenda">
+    <svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><path d="M9.5 4.5c-3.6 0-5.5 2.9-5.5 6.4 0 3 1.1 5.1 2 7.4.9 2.4 1 5.8 1.9 8.1.5 1.3 1.3 1.9 2.1 1.9 1.6 0 1.9-2.4 2.3-4.6.4-2 1-3.8 3.7-3.8s3.3 1.8 3.7 3.8c.4 2.2.7 4.6 2.3 4.6.8 0 1.6-.6 2.1-1.9.9-2.3 1-5.7 1.9-8.1.9-2.3 2-4.4 2-7.4 0-3.5-1.9-6.4-5.5-6.4-2.6 0-4 1.3-6.5 1.3S12.1 4.5 9.5 4.5z" fill="#fff"/><path d="M11 9.5c1.6.6 3.3.9 5 .9" stroke="#c24d6b" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+    <span>Central Odonto<small>{{ config.NOME_CLINICA }}</small></span></a>
+  <a href="/agenda" class="nav {{ 'ativo' if atual == '/agenda' or atual.startswith('/agenda/') }}"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>Agenda</span></a>
+  <a href="/atendimentos" class="nav {{ 'ativo' if atual.startswith('/atendimentos') }}"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 4z"/><path d="M8 9h8M8 12h5"/></svg><span>Atendimentos</span>{% if fila_count %}<b class="selo">{{ fila_count }}</b>{% endif %}</a>
+  <a href="/agendar" class="nav {{ 'ativo' if atual.startswith('/agendar') }}"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg><span>Agendar</span></a>
+  <a href="/pacientes" class="nav {{ 'ativo' if atual.startswith('/pacientes') }}"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14c2 .7 3.5 2.8 3.5 6"/></svg><span>Pacientes</span></a>
+  <a href="/espera" class="nav {{ 'ativo' if atual.startswith('/espera') }}"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>Lista de espera</span></a>
+  <a href="/painel" class="nav {{ 'ativo' if atual.startswith('/painel') }}"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Indicadores</span></a>
   {% if usuario.papel == 'coordenacao' %}
-  <a href="/clinicas" class="{{ 'ativo' if atual.startswith('/clinicas') }}"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg><span>Clínicas</span></a>
-  <a href="/acessos" class="{{ 'ativo' if atual.startswith('/acessos') }}"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/></svg><span>Acessos</span></a>
+  <div class="grupo">Coordenação</div>
+  <a href="/clinicas" class="nav {{ 'ativo' if atual.startswith('/clinicas') }}"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg><span>Clínicas</span></a>
+  <a href="/acessos" class="nav {{ 'ativo' if atual.startswith('/acessos') }}"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/></svg><span>Acessos</span></a>
   {% endif %}
   <div class="rodape">
     <div class="quem"><b>{{ usuario.login[:1]|upper }}</b><span>{{ usuario.login }}<small>{{ 'Coordenação' if usuario.papel == 'coordenacao' else 'Recepção' }}</small></span></div>
-    <a href="/sair"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10"/></svg><span>Sair</span></a>
+    <a class="nav" href="/sair"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10"/></svg><span>Sair</span></a>
   </div>
 </aside>
 {% endif %}
 <main class="{{ 'com-lateral' if usuario }} {% block main_classe %}{% endblock %}">
-  {% if msg %}<div class="aviso ok">{{ msg }}</div>{% endif %}
-  {% if erro %}<div class="aviso erro">{{ erro }}</div>{% endif %}
+  {% if not sem_avisos %}
+  {% if msg %}<div class="aviso ok" role="status">{{ msg }}</div>{% endif %}
+  {% if erro %}<div class="aviso erro" role="alert">{{ erro }}</div>{% endif %}
+  {% endif %}
   {% block conteudo %}{% endblock %}
 </main>
 </body>

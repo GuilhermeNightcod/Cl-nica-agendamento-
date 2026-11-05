@@ -69,6 +69,41 @@ def gerar_vagas(s: Session, feriados: set[date], inicio: date | None = None, fim
     return {"vagas_criadas": criadas, "vagas_atualizadas": atualizadas, "vagas_removidas": removidas}
 
 
+# ------------------------------------------------------------------ boxes
+def _ordem_turma(nome: str) -> tuple:
+    import re
+
+    m = re.match(r"\s*(\d+)", nome or "")
+    return (int(m.group(1)) if m else 999, nome)
+
+
+def uso_de_boxes(sessoes: list[SessaoClinica]) -> list[dict]:
+    """
+    Para cada clínica física e dia da semana, soma as duplas das turmas que atendem
+    AO MESMO TEMPO. Retorna avisos quando passa do número de boxes.
+    """
+    resultado = []
+    grupos: dict[tuple, list[SessaoClinica]] = {}
+    for se in sessoes:
+        if se.ativa and se.espaco:
+            grupos.setdefault((se.espaco.id, se.dia_semana), []).append(se)
+    for (_, dia), lista in sorted(grupos.items(), key=lambda kv: (kv[0][1], kv[1][0].espaco.nome)):
+        espaco = lista[0].espaco
+        # maior soma de duplas em qualquer instante (sessões que se sobrepõem)
+        pico, juntas = 0, []
+        for se in lista:
+            simult = [o for o in lista if o.hora_inicio < se.hora_fim and se.hora_inicio < o.hora_fim]
+            soma = sum(o.duplas or 0 for o in simult)
+            if soma > pico:
+                pico, juntas = soma, simult
+        resultado.append({
+            "espaco": espaco, "dia": dia, "duplas": pico, "turmas": sorted({o.turma for o in juntas}, key=_ordem_turma),
+            "boxes": espaco.boxes, "excede": bool(espaco.boxes and pico > espaco.boxes),
+            "sem_alunos": [o.turma for o in juntas if not o.alunos],
+        })
+    return resultado
+
+
 # ------------------------------------------------------------------ consulta
 def vagas_disponiveis(
     s: Session,

@@ -1,47 +1,54 @@
 {% extends "base.html" %}{% block titulo %}{{ v.sessao.turma }} {{ v.inicio.strftime('%d/%m') }}{% endblock %}
 {% block conteudo %}
 {% set se = v.sessao %}
-<p><a href="/agenda?semana={{ v.inicio.date() }}">← voltar para a agenda</a></p>
-<div class="caixa">
-  <div class="linha entre">
+<a class="voltar" href="/agenda?semana={{ v.inicio.date() }}">‹ Agenda da semana</a>
+<div class="caixa" style="border-top:5px solid {{ cor_turma }}">
+  <div class="linha entre" style="align-items:flex-start">
     <div>
-      <h1>{{ DIAS_SEMANA[v.inicio.weekday()] }}, {{ v.inicio.strftime('%d/%m/%Y') }} · {{ v.inicio.strftime('%H:%M') }}–{{ v.fim.strftime('%H:%M') }}</h1>
-      <p class="sub" style="margin:0"><b>{{ se.turma }}</b>{% if se.nome %} · {{ se.nome }}{% endif %}{% if se.professor %} · {{ se.professor }}{% endif %}</p>
-      <p style="margin:6px 0 0">Áreas: <b>{{ se.areas }}</b>{% if se.procedimentos_texto %} · <span class="suave">{{ se.procedimentos_texto }}</span>{% endif %}</p>
-      <p class="suave" style="margin:4px 0 0">{{ se.faixa_etaria }} · {{ v.ativos|length }} de {{ v.capacidade }} vagas ocupadas</p>
+      <h1>{{ DIAS_SEMANA[v.inicio.weekday()] }}, {{ v.inicio.strftime('%d/%m/%Y') }}</h1>
+      <p class="sub" style="margin:0"><b style="color:{{ cor_turma }}">{{ se.turma }}</b>, das {{ v.inicio.strftime('%H:%M') }} às {{ v.fim.strftime('%H:%M') }}</p>
     </div>
     <div>
       {% if v.bloqueada %}
-        <span class="tag bloq">⛔ Bloqueado: {{ v.motivo_bloqueio }}</span>
+        <span class="tag bloq">Bloqueado: {{ v.motivo_bloqueio }}</span>
         <form class="inline" method="post" action="/agenda/vaga/{{ v.id }}/bloqueio"><input type="hidden" name="acao" value="desbloquear"><button class="btn sec peq">Desbloquear</button></form>
       {% else %}
         <form class="linha" method="post" action="/agenda/vaga/{{ v.id }}/bloqueio" onsubmit="return confirm('Bloquear este dia? O bot para de oferecer este horário.')">
           <input type="hidden" name="acao" value="bloquear">
-          <input name="motivo" placeholder="Motivo (ex.: professor ausente, prova)" style="width:260px">
+          <input name="motivo" placeholder="Motivo (ex.: professor ausente, prova)" style="width:260px" aria-label="Motivo do bloqueio">
           <button class="btn perigo peq">Bloquear dia</button>
         </form>
       {% endif %}
     </div>
   </div>
+  <dl class="fatos">
+    <div><dt>Disciplina</dt><dd>{{ se.nome or '—' }}</dd></div>
+    <div><dt>Professor</dt><dd>{{ se.professor or '—' }}</dd></div>
+    <div><dt>Áreas</dt><dd>{{ se.areas }}</dd></div>
+    {% if se.procedimentos_texto %}<div><dt>Procedimentos</dt><dd style="font-weight:400">{{ se.procedimentos_texto }}</dd></div>{% endif %}
+    <div><dt>Idade</dt><dd>{{ se.faixa_etaria }}</dd></div>
+    <div><dt>Vagas</dt><dd><span class="boxes" style="color:{{ cor_turma }};display:inline-flex;vertical-align:-1px;margin-right:6px">{% for i in range([v.capacidade, v.ativos|length]|max) %}<i class="{{ 'encaixe' if i >= v.capacidade else ('ocupado' if i < v.ativos|length) }}"></i>{% endfor %}</span>{{ v.ativos|length }} de {{ v.capacidade }}{% if se.duplas %} ({{ se.duplas }} duplas){% endif %}</dd></div>
+    {% if se.espaco %}<div><dt>Clínica física</dt><dd>{{ se.espaco.nome }}{% if se.espaco.boxes %}, {{ se.espaco.boxes }} boxes{% endif %}</dd></div>{% endif %}
+  </dl>
 </div>
 
 <div class="caixa tabela">
   <h2>Pacientes agendados</h2>
   {% if v.agendamentos %}
   <table>
-    <tr><th>#</th><th>Paciente</th><th>Procedimento</th><th>Horário / aluno / observação</th><th>Status</th><th>Presença</th></tr>
+    <tr><th>#</th><th>Paciente</th><th>Procedimento</th><th>Chegada, dupla e observação</th><th>Status</th><th>Presença</th></tr>
     {% for a in v.agendamentos|sort(attribute='inicio') %}
     <tr>
       <td>{{ loop.index }}</td>
       <td><a href="/pacientes/{{ a.paciente.id }}"><b>{{ a.paciente.nome_exibicao }}</b></a><br>
         <small>{% if a.paciente.telefone %}{{ a.paciente.telefone|fone }}{% else %}sem WhatsApp{% endif %}
-        {% if a.paciente.idade() is not none %} · {{ a.paciente.idade() }} anos{% endif %}
-        {% if a.paciente.numero_prontuario %} · pront. {{ a.paciente.numero_prontuario }}{% endif %}</small></td>
+        {% if a.paciente.idade() is not none %}<br>{{ a.paciente.idade() }} anos{% endif %}
+        {% if a.paciente.numero_prontuario %}<br>prontuário {{ a.paciente.numero_prontuario }}{% endif %}</small></td>
       <td>{{ a.descricao }}{% if a.queixa %}<br><small>“{{ a.queixa }}”</small>{% endif %}<br><small>{{ 'pelo WhatsApp' if a.origem == 'bot' else 'pela recepção' }}</small></td>
       <td>
         <form method="post" action="/agenda/agendamento/{{ a.id }}/editar" class="linha" style="gap:6px">
-          <input type="time" name="hora" value="{{ a.hora.strftime('%H:%M') if a.hora else '' }}" title="Horário de chegada" style="width:105px">
-          <input name="aluno" value="{{ a.aluno or '' }}" placeholder="Aluno" style="width:130px">
+          <input type="time" name="hora" value="{{ a.hora.strftime('%H:%M') if a.hora else '' }}" title="Horário de chegada" aria-label="Horário de chegada" style="width:130px">
+          <input name="aluno" value="{{ a.aluno or '' }}" placeholder="Dupla (alunos)" style="width:150px">
           <input name="observacao" value="{{ a.observacao or '' }}" placeholder="Observação" style="width:160px">
           <button class="btn sec peq">Salvar</button>
         </form>
@@ -89,7 +96,7 @@
     <div class="campos">
       <div><label>Procedimento</label>{% with selecionado='', com_vazio=false, autoenviar=false %}{% include "_select_procedimento.html" %}{% endwith %}</div>
       <div><label>Horário de chegada</label><input type="time" name="hora" value="{{ v.inicio.strftime('%H:%M') }}" min="{{ v.inicio.strftime('%H:%M') }}" max="{{ v.fim.strftime('%H:%M') }}"></div>
-      <div><label>Aluno (opcional)</label><input name="aluno"></div>
+      <div><label>Dupla de alunos (opcional)</label><input name="aluno" placeholder="ex.: Guilherme e Ana"></div>
       <div><label>Observação (opcional)</label><input name="observacao"></div>
     </div>
     <div class="linha" style="margin-bottom:12px">

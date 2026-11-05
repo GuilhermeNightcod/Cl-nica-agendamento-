@@ -28,23 +28,23 @@
   .registro-dente { margin-top:14px; border:1px solid var(--azul); border-radius:10px; padding:14px; background:#f8fbff; }
 </style>{% endblock %}
 {% block conteudo %}
-<p><a href="/pacientes">← pacientes</a></p>
-<div class="linha entre" style="margin-bottom:14px">
+<a class="voltar" href="/pacientes">‹ Pacientes</a>
+<div class="cabeca-pag" style="align-items:flex-start">
   <div>
     <h1>{{ p.nome_exibicao }}</h1>
-    <p class="sub" style="margin:0">
-      {% if p.idade() is not none %}{{ p.idade() }} anos · {% endif %}
-      {% if p.telefone %}{{ p.telefone|fone }} · {% endif %}
-      {% if p.numero_prontuario %}Prontuário físico nº <b>{{ p.numero_prontuario }}</b> · {% endif %}
-      ficha {{ p.id }}{% if p.aceitou_privacidade_em %} · aceitou o aviso LGPD em {{ p.aceitou_privacidade_em.strftime('%d/%m/%Y') }}{% endif %}
-    </p>
+    <dl class="fatos" style="margin-top:8px">
+      <div><dt>Idade</dt><dd>{{ '%d anos'|format(p.idade()) if p.idade() is not none else '—' }}</dd></div>
+      <div><dt>WhatsApp</dt><dd>{{ p.telefone|fone or '—' }}</dd></div>
+      <div><dt>Prontuário físico</dt><dd>{{ p.numero_prontuario or '—' }}</dd></div>
+      <div><dt>Ficha</dt><dd>{{ p.id }}</dd></div>
+      <div><dt>Aviso LGPD</dt><dd>{{ 'aceito em ' + p.aceitou_privacidade_em.strftime('%d/%m/%Y') if p.aceitou_privacidade_em else 'não registrado' }}</dd></div>
+    </dl>
   </div>
   <div class="linha">
-    {% if p.telefone %}<form class="inline" method="post" action="/atendimentos/paciente/{{ p.id }}/abrir"><button class="btn sec">💬 Conversar no WhatsApp</button></form>{% endif %}
+    {% if p.telefone %}<form class="inline" method="post" action="/atendimentos/paciente/{{ p.id }}/abrir"><button class="btn sec">Conversar no WhatsApp</button></form>{% endif %}
     <a class="btn" href="/agendar?paciente_id={{ p.id }}">Agendar</a>
   </div>
 </div>
-
 <div class="grade2">
   <div class="caixa">
     <h2>Dados do paciente</h2>
@@ -52,7 +52,7 @@
   </div>
   <div class="caixa tabela">
     <h2>Consultas</h2>
-    {% if espera %}<p>⏳ Na lista de espera: {% for e in espera %}<span class="tag">{{ e.especialidade.nome }}</span> {% endfor %}</p>{% endif %}
+    {% if espera %}<p>Na lista de espera: {% for e in espera %}<span class="tag">{{ e.especialidade.nome }}</span> {% endfor %}</p>{% endif %}
     <table>
       {% for a in ags %}
       <tr>
@@ -68,7 +68,7 @@
 {% include "_odontograma.html" %}
 
 <div class="caixa">
-  <div class="linha entre"><h2>📁 Prontuário digitalizado</h2><span class="suave">{{ p.documentos|length }} documento(s)</span></div>
+  <div class="linha entre"><h2>Prontuário digitalizado</h2><span class="suave">{{ p.documentos|length }} documento(s)</span></div>
   <form class="envio" method="post" action="/pacientes/{{ p.id }}/documentos" enctype="multipart/form-data" style="margin-bottom:16px">
     <div class="campos">
       <div><label>Fotos ou PDF (pode escolher vários)</label>
@@ -78,7 +78,7 @@
       <div><label>Descrição (opcional)</label><input name="descricao" placeholder="ex.: folhas 1 a 3"></div>
     </div>
     <div class="linha entre">
-      <small>📱 No celular, o botão de arquivo abre a câmera: fotografe cada folha do prontuário físico. JPG, PNG ou PDF até {{ config.TAMANHO_MAX_ARQUIVO_MB }} MB.</small>
+      <small>No celular, o botão de arquivo abre a câmera: fotografe cada folha do prontuário físico. JPG, PNG ou PDF até {{ config.TAMANHO_MAX_ARQUIVO_MB }} MB.</small>
       <button class="btn">Anexar ao prontuário</button>
     </div>
   </form>

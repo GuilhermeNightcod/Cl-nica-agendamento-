@@ -1,27 +1,76 @@
 {% extends "base.html" %}{% block titulo %}Clínicas{% endblock %}
+{% block cabeca %}<style>
+  .uso-tabela td { vertical-align:middle; }
+  .medidor { height:10px; background:var(--esmalte); border-radius:99px; overflow:hidden; min-width:140px; }
+  .medidor span { display:block; height:100%; background:var(--campo); }
+  .medidor.excede span { background:var(--erro); }
+  .espaco-form { display:flex; gap:8px; align-items:center; }
+  .espaco-form input[name=boxes] { width:110px; }
+</style>{% endblock %}
 {% block conteudo %}
-<div class="linha entre" style="margin-bottom:14px">
+<div class="cabeca-pag">
   <div><h1>Clínicas das turmas</h1>
-    <p class="sub" style="margin:0">Dias fixos de atendimento de cada turma. O sistema gera a agenda de
-    {{ config.SEMESTRE_INICIO.strftime('%d/%m/%Y') }} a {{ config.SEMESTRE_FIM.strftime('%d/%m/%Y') }}, pulando os feriados.</p></div>
+    <p class="sub">Dias fixos de atendimento de cada turma. A agenda vai de {{ config.SEMESTRE_INICIO.strftime('%d/%m/%Y') }} a {{ config.SEMESTRE_FIM.strftime('%d/%m/%Y') }} e pula os feriados.</p></div>
   <div class="linha">
     <form class="inline" method="post" action="/clinicas-gerar"><button class="btn sec">Atualizar agenda do semestre</button></form>
-    <a class="btn" href="/clinicas/nova">+ Nova clínica</a>
+    <a class="btn" href="/clinicas/nova">Nova clínica</a>
   </div>
 </div>
+
+<div class="grade2">
+  <div class="caixa">
+    <h2>Clínicas físicas e boxes</h2>
+    <p class="suave" style="margin-top:-6px">Cada dupla de alunos ocupa um box. Quando duas turmas atendem na mesma clínica no mesmo horário, as duplas somam.</p>
+    {% for e in espacos %}
+    <form class="espaco-form" method="post" action="/clinicas/espaco" style="margin-bottom:8px">
+      <input type="hidden" name="espaco_id" value="{{ e.id }}">
+      <input name="nome" value="{{ e.nome }}" aria-label="Nome da clínica física">
+      <input name="boxes" type="number" min="1" value="{{ e.boxes or '' }}" placeholder="nº de boxes" aria-label="Boxes">
+      <button class="btn sec peq">Salvar</button>
+    </form>
+    {% endfor %}
+    <form class="espaco-form" method="post" action="/clinicas/espaco" style="margin-top:14px">
+      <input name="nome" placeholder="Outra clínica física (ex.: Clínica 2)" required>
+      <input name="boxes" type="number" min="1" placeholder="nº de boxes">
+      <button class="btn peq">Adicionar</button>
+    </form>
+  </div>
+  <div class="caixa tabela">
+    <h2>Uso de boxes por dia</h2>
+    <table class="uso-tabela">
+      <tr><th>Dia</th><th>Clínica física</th><th>Turmas juntas</th><th>Duplas</th><th></th></tr>
+      {% for u in boxes %}
+      <tr>
+        <td><b>{{ DIAS_SEMANA[u.dia] }}</b></td>
+        <td style="white-space:nowrap">{{ u.espaco.nome }}</td>
+        <td style="white-space:nowrap">{% for t in u.turmas %}{{ t.split(' ')[0] }}{{ ' e ' if not loop.last }}{% endfor %}</td>
+        <td style="white-space:nowrap">
+          {% if u.sem_alunos %}<span class="suave">falta nº de alunos ({{ u.sem_alunos|join(', ') }})</span>
+          {% elif u.boxes %}<b style="{{ 'color:var(--erro)' if u.excede }}">{{ u.duplas }} de {{ u.boxes }}</b>
+          {% else %}{{ u.duplas }} <span class="suave">(boxes a definir)</span>{% endif %}
+        </td>
+        <td>{% if u.boxes and not u.sem_alunos %}<div class="medidor {{ 'excede' if u.excede }}"><span style="width:{{ [100, (100 * u.duplas / u.boxes)|round|int]|min }}%"></span></div>
+          {% if u.excede %}{% set f = u.duplas - u.boxes %}<small style="color:var(--erro)">{{ 'falta 1 box' if f == 1 else 'faltam %d boxes'|format(f) }}</small>{% endif %}{% endif %}</td>
+      </tr>
+      {% else %}<tr><td class="vazio" colspan="5">Ligue cada clínica a uma clínica física para ver o uso de boxes.</td></tr>{% endfor %}
+    </table>
+  </div>
+</div>
+
 {% for turma, sessoes in por_turma.items() %}
 <div class="caixa tabela">
   <h2>{{ turma }}</h2>
   <table>
-    <tr><th>Dia</th><th>Horário</th><th>Clínica / professor</th><th>Áreas</th><th>Procedimentos</th><th>Vagas</th><th>Idade</th><th></th></tr>
+    <tr><th>Dia</th><th>Horário</th><th>Disciplina</th><th>Professor</th><th>Áreas</th><th>Alunos</th><th>Vagas</th><th>Idade</th><th></th></tr>
     {% for se in sessoes %}
     <tr style="{{ 'opacity:.5' if not se.ativa }}">
       <td><b>{{ se.dia_nome }}</b>{% if not se.ativa %}<br><span class="tag">inativa</span>{% endif %}</td>
-      <td>{{ se.horario }}</td>
-      <td>{{ se.nome }}<br><small>{{ se.professor }}</small></td>
-      <td>{{ se.areas }}</td>
-      <td><small>{{ se.procedimentos_texto }}</small></td>
-      <td>{{ se.vagas }}</td>
+      <td style="white-space:nowrap">{{ se.horario }}</td>
+      <td>{{ se.nome }}{% if se.espaco %}<br><small>{{ se.espaco.nome }}</small>{% endif %}</td>
+      <td>{{ se.professor }}</td>
+      <td><small>{{ se.areas }}</small></td>
+      <td>{% if se.alunos %}{{ se.alunos }}<br><small>{{ se.duplas }} duplas</small>{% else %}<span class="tag agendado">informar</span>{% endif %}</td>
+      <td>{{ se.vagas }}{% if se.alunos %}<br><small>{{ se.pacientes_por_dupla }} por dupla</small>{% endif %}</td>
       <td><small>{{ se.faixa_etaria }}</small></td>
       <td><a class="btn sec peq" href="/clinicas/{{ se.id }}">Editar</a></td>
     </tr>

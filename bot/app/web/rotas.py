@@ -24,7 +24,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy import func, or_, select
 
 from .. import config, dados
-from ..agenda import STATUS_ATIVOS, VagaIndisponivel, agendar, gerar_vagas, mudar_status, vagas_disponiveis
+from ..agenda import STATUS_ATIVOS, VagaIndisponivel, agendar, gerar_vagas, mudar_status, uso_de_boxes, vagas_disponiveis
 from ..db import sessao
 from ..fluxo import ESTADOS_AGENDAMENTO
 from ..models import (
@@ -33,6 +33,7 @@ from ..models import (
     Atendimento,
     Conversa,
     Documento,
+    EspacoClinico,
     Especialidade,
     ListaEspera,
     Paciente,
@@ -123,7 +124,7 @@ def ir(url: str, **params) -> RedirectResponse:
 
 @router.get("/entrar", response_class=HTMLResponse)
 def tela_entrar(request: Request, voltar: str = "/agenda"):
-    return render(request, "entrar.html", voltar=voltar)
+    return render(request, "entrar.html", voltar=voltar, sem_avisos=True)
 
 
 @router.post("/entrar")
@@ -210,7 +211,7 @@ def procedimentos_por_area(s, sessao_clinica: SessaoClinica | None = None) -> li
 
 
 # ============================================================ agenda
-CORES_TURMA = ["#2563eb", "#0d9488", "#7c3aed", "#c2410c", "#be185d", "#4d7c0f"]
+CORES_TURMA = ["#3557c9", "#2e8a6e", "#8e3f82", "#b5651d", "#4b6b2a", "#5b4fa8"]  # papel articular
 
 
 def _layout_dia(vagas: list[Vaga]) -> list[tuple[Vaga, int, int]]:
@@ -254,13 +255,16 @@ def agenda(request: Request, semana: str = "", turma: str = "", professor: str =
         else:
             h_ini, h_fim = 18, 23
         h_ini, h_fim = max(0, h_ini - 1), min(24, max(h_fim + 1, h_ini + 4))
+        if visao != "dia" and not any(v.inicio.date() == dias_vistos[-1] for v in vagas):
+            dias_vistos = dias_vistos[:5]  # sem clínica no sábado: mostra só seg–sex
         dias = [(d, _layout_dia([v for v in vagas if v.inicio.date() == d])) for d in dias_vistos]
+        boxes_dia = {d: uso_de_boxes([v.sessao for v, _, _ in blocos if not v.bloqueada]) for d, blocos in dias}
         professores = sorted({p for p in s.scalars(select(SessaoClinica.professor).distinct()) if p})
         passo = timedelta(days=1 if visao == "dia" else 7)
         return render(
             request, "agenda.html", dias=dias, seg=seg, ref=ref, turma=turma, professor=professor, visao=visao,
             turmas=lista_turmas, professores=professores, cores=cores, hoje=config.agora().date(),
-            anterior=ref - passo, proxima=ref + passo, h_ini=h_ini, h_fim=h_fim, px_hora=120 if visao == "dia" else 110,
+            anterior=ref - passo, proxima=ref + passo, boxes_dia=boxes_dia, h_ini=h_ini, h_fim=h_fim, px_hora=120 if visao == "dia" else 110,
         )
 
 
@@ -270,8 +274,10 @@ def ver_vaga(request: Request, vaga_id: int, busca: str = "", u=Depends(usuario)
         v = s.get(Vaga, vaga_id)
         if not v:
             raise HTTPException(404)
+        lista_turmas = turmas(s)
+        cor = CORES_TURMA[lista_turmas.index(v.sessao.turma) % len(CORES_TURMA)] if v.sessao.turma in lista_turmas else CORES_TURMA[0]
         return render(
-            request, "vaga.html", v=v, busca=busca, resultados=buscar_pacientes(s, busca),
+            request, "vaga.html", v=v, busca=busca, resultados=buscar_pacientes(s, busca), cor_turma=cor,
             areas=procedimentos_por_area(s, v.sessao),
         )
 
@@ -731,7 +737,17 @@ def clinicas(request: Request, u=Depends(coordenacao)):
         for se in sessoes:
             por_turma.setdefault(se.turma, []).append(se)
         por_turma = dict(sorted(por_turma.items(), key=lambda kv: ordem_turma(kv[0])))
-        return render(request, "clinicas.html", por_turma=por_turma)
+        espacos = s.scalars(select(EspacoClinico).order_by(EspacoClinico.nome)).all()
+        return render(request, "clinicas.html", por_turma=por_turma, espacos=espacos, boxes=uso_de_boxes(list(sessoes)))
+
+
+@router.post("/clinicas/espaco")
+def salvar_espaco(nome: str = Form(...), boxes: str = Form(""), espaco_id: str = Form(""), u=Depends(coordenacao)):
+    with sessao() as s:
+        e = s.get(EspacoClinico, int(espaco_id)) if int_ou_none(espaco_id) else EspacoClinico()
+        e.nome, e.boxes = nome.strip()[:80], int_ou_none(boxes)
+        s.add(e)
+    return ir("/clinicas", msg="Clínica física salva.")
 
 
 @router.get("/clinicas/{sid:int}", response_class=HTMLResponse)
@@ -743,6 +759,7 @@ def form_clinica(request: Request, sid: int | None = None, u=Depends(coordenacao
             raise HTTPException(404)
         areas = s.scalars(select(Especialidade).where(Especialidade.ativa).order_by(Especialidade.nome)).all()
         return render(request, "clinica_form.html", se=se, areas=areas, turmas=turmas(s),
+                      espacos=s.scalars(select(EspacoClinico).order_by(EspacoClinico.nome)).all(),
                       marcadas={e.id for e in se.especialidades} if se else set())
 
 
@@ -771,6 +788,18 @@ async def salvar_clinica(request: Request, sid: int | None = None, u=Depends(coo
         se.professor = str(f.get("professor", "")).strip()
         se.procedimentos_texto = str(f.get("procedimentos_texto", "")).strip()
         se.vagas = max(1, int_ou_none(f.get("vagas")) or 1)
+        se.alunos = int_ou_none(f.get("alunos"))
+        se.pacientes_por_dupla = max(1, int_ou_none(f.get("pacientes_por_dupla")) or 1)
+        se.recalcular_vagas()
+        nome_espaco = str(f.get("espaco", "")).strip()
+        if nome_espaco:
+            esp = s.scalar(select(EspacoClinico).where(EspacoClinico.nome == nome_espaco))
+            if not esp:
+                esp = EspacoClinico(nome=nome_espaco[:80])
+                s.add(esp)
+            se.espaco = esp
+        else:
+            se.espaco = None
         se.idade_min, se.idade_max = int_ou_none(f.get("idade_min")), int_ou_none(f.get("idade_max"))
         se.ativa = f.get("ativa") == "1"
         se.especialidades = list(s.scalars(select(Especialidade).where(Especialidade.id.in_(area_ids))))

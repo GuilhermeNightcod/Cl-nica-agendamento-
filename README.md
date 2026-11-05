@@ -27,6 +27,10 @@ TURMA (6º, 8º, 10º semestre)
 PACIENTE → ficha + nº do prontuário físico + fotos/PDF das folhas do prontuário
 ```
 
+**Vagas = alunos ÷ 2 (duplas) × pacientes por dupla.** Cada dupla ocupa um box. Quando duas turmas atendem
+na mesma clínica física no mesmo horário, as duplas somam e a agenda mostra, no topo de cada dia,
+"Odontocase 21/20 boxes" em vermelho quando falta box.
+
 Cada clínica pode ter **faixa etária**: Adolescente (10 a 19 anos), Criança (até 12) e Idoso (60+). O sistema e o bot só oferecem a clínica certa para a idade do paciente.
 
 ---
@@ -89,7 +93,8 @@ Aceita JPG, PNG e PDF.
 
 | Quero mudar... | Onde |
 |---|---|
-| **Dias de clínica, professores, áreas, vagas e idades** | Tela **Clínicas** (coordenação) |
+| **Dias de clínica, professores, áreas, alunos, idades** | Tela **Clínicas** (coordenação) |
+| **Boxes de cada clínica física** | Tela **Clínicas**, em "Clínicas físicas e boxes" |
 | **Feriados e recessos** | `bot/dados/feriados.csv`, depois **Clínicas → Atualizar agenda do semestre** |
 | **Lista de procedimentos** | `bot/dados/procedimentos.csv` (área;procedimento) |
 | **Áreas (especialidades)** | `bot/dados/especialidades.csv` (`mostrar_no_bot` = sim/nao) |
@@ -101,7 +106,8 @@ Depois disso, use a tela **Clínicas**.
 
 > ✅ A grade vem da **Grade 2026.2 Odonto Noturno** (6º, 8º e 10º semestre, só as disciplinas em
 > CLÍNICA/ODONTOCASE; pré-clínica, teoria e estágios em campo externo não recebem pacientes).
-> ⚠️ Confira: o **horário 19:00–22:00**, as **10 vagas** por clínica e as **áreas** de cada disciplina foram estimados.
+> ⚠️ Confira: o **horário 19:00–22:00** e as **áreas** de cada disciplina foram estimados. Informe o **nº de alunos**
+> de cada turma e o **nº de boxes** do Odontocase; até lá as vagas ficam em 10 por clínica.
 
 > 💡 Ao salvar um CSV no Excel, escolha **"CSV UTF-8"** para os acentos não quebrarem.
 

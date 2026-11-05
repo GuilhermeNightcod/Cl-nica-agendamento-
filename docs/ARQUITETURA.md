@@ -36,6 +36,7 @@ app/
 ```
 Especialidade 1─N Procedimento
 SessaoClinica N─N Especialidade        (turma, dia_semana, hora_inicio/fim, professor, vagas, idade_min/max)
+SessaoClinica N─1 EspacoClinico        (clínica física com nº de boxes; turmas simultâneas somam duplas)
 SessaoClinica 1─N Vaga                 (uma data concreta; capacidade, ocupadas, bloqueada)
 Vaga          1─N Agendamento N─1 Paciente   (especialidade, procedimento, aluno, origem bot|recepcao, status)
 Paciente      1─N Documento            (prontuário digitalizado: arquivo no disco em ARQUIVOS_DIR)
@@ -53,6 +54,14 @@ RegistroAcesso                         (LGPD: usuário, ação, paciente, quando
 - A grade de `sessoes_clinica.csv` só é importada com a tabela vazia. Depois a fonte da verdade é a tela Clínicas.
 - Upload: o tipo do arquivo é validado pelos primeiros bytes (JPG/PNG/PDF), não pela extensão. Os arquivos
   recebem nome aleatório e só são servidos por rota autenticada, com registro de acesso.
+
+## Visual
+
+- Estilos em `app/static/estilo.css` (tokens no topo). Fonte Atkinson Hyperlegible Next servida localmente
+  (`app/static/fontes`, licença OFL), sem chamar o Google na hora do uso.
+- Paleta: verde campo cirúrgico `#1f4f47`, rosa gengiva `#c24d6b` (destaque), esmalte `#f5f8f7`, tinta `#1b2826`.
+- Turmas com cores de papel articular (carbono): azul `#3557c9`, verde `#2e8a6e`, ameixa `#8e3f82`.
+- Ocupação mostrada como fileira de boxes (`.boxes`): um quadrado por vaga; rosa = encaixe acima do limite.
 
 ## Decisões e por quê
 

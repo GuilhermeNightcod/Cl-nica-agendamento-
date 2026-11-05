@@ -1,5 +1,5 @@
 {# Odontograma: numeração FDI, faces M O D V L, status por cor, "!" = anotação #}
-{% set CORES = {'aberto': ('#f59f00', '#ffe8a3'), 'finalizado': ('#2f9e44', '#c3f0cb'), 'existente': ('#1c7ed6', '#d0e5fb'), 'ausente': ('#adb5bd', '#f1f3f5')} %}
+{% set CORES = {'aberto': ('#c98a00', '#ffe9a8'), 'finalizado': ('#1f7a55', '#c9ecd9'), 'existente': ('#3557c9', '#dbe3fa'), 'ausente': ('#9aa8a4', '#eef2f1')} %}
 {% macro forma(n) -%}
   {%- set t = n % 10 -%}{%- set dec = (n // 10) >= 5 -%}
   {%- if t <= 2 -%}M12 34 L15 6 Q18 1 21 6 L24 34 Q26 56 18 60 Q10 56 12 34 Z
@@ -35,7 +35,7 @@
 
 <div class="caixa" id="odontograma">
   <div class="linha entre" style="margin-bottom:10px">
-    <h2 style="margin:0">🦷 Odontograma</h2>
+    <h2 style="margin:0">Odontograma</h2>
     <div class="seg-tabs">
       <button type="button" data-aba="perm" class="{{ 'ativa' if aba_odonto == 'perm' }}">Permanentes</button>
       <button type="button" data-aba="dec" class="{{ 'ativa' if aba_odonto == 'dec' }}">Decíduos</button>
@@ -59,7 +59,7 @@
   <div class="legenda-odo">
     {% for cod, nome in status_dente.items() %}<span><i style="background:{{ CORES[cod][1] }};border-color:{{ CORES[cod][0] }}"></i>{{ nome }}</span>{% endfor %}
     <span><b class="nota" style="position:static">!</b> Anotação</span>
-    <span class="suave">Faces: M mesial · O oclusal/incisal · D distal · V vestibular · L lingual/palatina</span>
+    <span class="suave">Faces: M mesial, O oclusal, D distal, V vestibular, L lingual ou palatina</span>
   </div>
 
   <form class="registro-dente" method="post" action="/pacientes/{{ p.id }}/odontograma" id="form-dente" hidden>
@@ -87,7 +87,7 @@
       {% for r in regs %}
       <tr data-dente="{{ r.dente }}">
         <td><b>{{ r.local }}</b>{% if r.faces %} <span class="tag">{{ r.faces }}</span>{% endif %}</td>
-        <td>{{ r.descricao }}{% if r.anotacao %}<br><small>📝 {{ r.anotacao }}</small>{% endif %}</td>
+        <td>{{ r.descricao }}{% if r.anotacao %}<br><small>{{ r.anotacao }}</small>{% endif %}</td>
         <td><span class="tag" style="background:{{ CORES[r.status][1] }};color:{{ CORES[r.status][0] }}">{{ status_dente[r.status] }}</span></td>
         <td>{{ r.aluno or '' }}</td>
         <td><small>{{ r.criado_em.strftime('%d/%m/%Y') }}<br>por {{ r.criado_por }}</small></td>

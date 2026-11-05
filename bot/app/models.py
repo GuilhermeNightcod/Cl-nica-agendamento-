@@ -87,6 +87,16 @@ class Procedimento(Base):
     especialidade: Mapped[Especialidade] = relationship(back_populates="procedimentos")
 
 
+class EspacoClinico(Base):
+    """Clínica física (ex.: Odontocase), com um número de boxes/cadeiras. Várias turmas podem dividir."""
+
+    __tablename__ = "espacos_clinicos"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    nome: Mapped[str] = mapped_column(String(80), unique=True)
+    boxes: Mapped[int | None] = mapped_column(Integer)  # None = ainda não informado
+
+
 sessao_especialidade = Table(
     "sessao_especialidade",
     Base.metadata,
@@ -112,11 +122,24 @@ class SessaoClinica(Base):
     professor: Mapped[str] = mapped_column(String(120), default="")
     procedimentos_texto: Mapped[str] = mapped_column(Text, default="")  # "anamnese, capeamento pulpar, acesso"
     vagas: Mapped[int] = mapped_column(Integer, default=10)
+    espaco_id: Mapped[int | None] = mapped_column(ForeignKey("espacos_clinicos.id"))
+    alunos: Mapped[int | None] = mapped_column(Integer)  # alunos da turma nesta clínica
+    pacientes_por_dupla: Mapped[int] = mapped_column(Integer, default=1)
     idade_min: Mapped[int | None] = mapped_column(Integer)
     idade_max: Mapped[int | None] = mapped_column(Integer)
     ativa: Mapped[bool] = mapped_column(Boolean, default=True)
 
     especialidades: Mapped[list[Especialidade]] = relationship(secondary=sessao_especialidade, order_by="Especialidade.nome")
+    espaco: Mapped[EspacoClinico | None] = relationship()
+
+    @property
+    def duplas(self) -> int | None:
+        """Cada dupla de alunos ocupa um box."""
+        return (self.alunos + 1) // 2 if self.alunos else None
+
+    def recalcular_vagas(self) -> None:
+        if self.duplas:
+            self.vagas = self.duplas * max(1, self.pacientes_por_dupla or 1)
 
     @property
     def dia_nome(self) -> str:

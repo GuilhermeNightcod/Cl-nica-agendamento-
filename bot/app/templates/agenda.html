@@ -1,76 +1,119 @@
 {% extends "base.html" %}{% block titulo %}Agenda{% endblock %}{% block main_classe %}largo{% endblock %}
 {% block cabeca %}<style>
-  .barra-agenda { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:14px; }
+  .barra-agenda { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:16px; }
   .barra-agenda select, .barra-agenda input { width:auto; }
-  .barra-agenda .periodo { font-weight:600; font-size:16px; margin:0 6px; }
-  .mais { width:38px; height:38px; border-radius:50%; background:#22c55e; color:#fff; display:flex; align-items:center; justify-content:center; font-size:24px; text-decoration:none; }
-  .grade-agenda { background:#fff; border:1px solid var(--borda); border-radius:12px; overflow:auto; }
-  .cab { display:grid; position:sticky; top:0; background:#fff; z-index:3; border-bottom:1px solid var(--borda); }
-  .cab div { padding:10px 8px; font-size:13px; color:var(--suave); }
-  .cab div b { display:block; font-size:22px; color:var(--texto); font-weight:600; }
-  .cab div.hoje b { color:#fff; background:var(--azul); border-radius:50%; width:38px; height:38px; display:flex; align-items:center; justify-content:center; }
+  .barra-agenda h1 { font-size:var(--t-xl); margin:0 12px 0 0; min-width:220px; }
+  .barra-agenda .navega { display:inline-flex; border:1px solid #b8cbc5; border-radius:var(--r-controle); overflow:hidden; }
+  .barra-agenda .navega a { padding:8px 13px; text-decoration:none; color:var(--campo); font-weight:700; font-size:var(--t-sm); background:#fff; }
+  .barra-agenda .navega a + a { border-left:1px solid #b8cbc5; }
+  .barra-agenda .navega a:hover { background:var(--campo-claro); }
+  .barra-agenda .direita { margin-left:auto; display:flex; gap:10px; }
+  .grade-agenda { background:#fff; border:1px solid var(--linha); border-radius:var(--r-caixa); overflow:auto; }
+  .cab { display:grid; position:sticky; top:0; background:#fff; z-index:3; border-bottom:2px solid var(--linha); }
+  .cab > div { padding:10px 10px 12px; border-left:1px solid var(--linha); min-height:76px; }
+  .cab > div:first-child { border-left:0; }
+  .cab .dia { display:flex; align-items:baseline; gap:8px; text-decoration:none; color:var(--tinta); }
+  .cab .dia b { font-size:var(--t-xl); font-weight:750; letter-spacing:-.02em; }
+  .cab .dia span { color:var(--suave); font-size:var(--t-sm); }
+  .cab .hoje .dia b { color:#fff; background:var(--gengiva); border-radius:8px; padding:0 8px; }
+  .cab .uso { margin-top:6px; display:flex; flex-direction:column; gap:4px; }
   .corpo { display:grid; position:relative; }
-  .horas div { height:var(--px); font-size:12px; color:var(--suave); text-align:right; padding-right:8px; transform:translateY(-7px); }
-  .coluna { position:relative; border-left:1px solid var(--borda); background-image:repeating-linear-gradient(to bottom, var(--borda) 0 1px, transparent 1px var(--px)); }
-  .bloco { position:absolute; border-radius:8px; padding:6px 7px; overflow:hidden; text-decoration:none; color:var(--texto); border:1px solid; display:flex; flex-direction:column; gap:3px; box-sizing:border-box; }
-  .bloco:hover { box-shadow:0 3px 12px rgba(0,0,0,.12); z-index:2; }
-  .bloco .t { font-weight:700; font-size:12px; }
-  .bloco .i { font-size:11px; color:var(--suave); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .bloco .lot { font-size:11px; font-weight:600; }
-  .pac { font-size:11.5px; background:#fff; border-radius:5px; padding:2px 6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; border-left:3px solid; }
-  .pac.compareceu { opacity:.65; } .pac.faltou { text-decoration:line-through; opacity:.6; }
-  .bloco.bloq { background:repeating-linear-gradient(45deg,#fde8e6 0 8px,#fff 8px 16px) !important; border-color:var(--vermelho) !important; }
-  .legenda { display:flex; gap:14px; flex-wrap:wrap; font-size:13px; margin-top:10px; color:var(--suave); }
-  .legenda i { display:inline-block; width:12px; height:12px; border-radius:3px; margin-right:5px; vertical-align:-1px; }
-  .sem { color:var(--suave); font-size:13px; padding:10px; }
+  .horas div { height:var(--px); font-size:var(--t-xs); color:var(--suave); text-align:right; padding-right:10px; transform:translateY(-8px); }
+  .coluna { position:relative; border-left:1px solid var(--linha); background-image:repeating-linear-gradient(to bottom, var(--linha) 0 1px, transparent 1px calc(var(--px) / 2)); background-size:100% var(--px); }
+  .coluna.hoje { background-color:#fdf7f9; }
+  .bloco { --c:#3557c9; position:absolute; border-radius:10px; padding:8px 9px; overflow:hidden; text-decoration:none; color:var(--tinta);
+           background:color-mix(in srgb, var(--c) 7%, #fff); border:1px solid color-mix(in srgb, var(--c) 30%, #fff); border-top:4px solid var(--c);
+           display:flex; flex-direction:column; gap:5px; }
+  .bloco:hover { border-color:var(--c); }
+  .bloco:focus-visible { outline-offset:0; }
+  .bloco .t { font-weight:750; font-size:var(--t-sm); color:var(--c); display:flex; justify-content:space-between; gap:6px; flex-wrap:wrap; white-space:nowrap; }
+  .bloco .t span { font-weight:600; color:var(--suave); font-size:var(--t-xs); }
+  .bloco .n { font-size:var(--t-xs); line-height:1.3; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; font-weight:600; }
+  .bloco .p { font-size:var(--t-xs); color:var(--suave); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .bloco .boxes { color:var(--c); margin-top:1px; }
+  .bloco .lot { font-size:var(--t-xs); color:var(--suave); }
+  .pac { font-size:12px; background:#fff; border-radius:6px; padding:3px 7px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; border:1px solid color-mix(in srgb, var(--c) 18%, #fff); }
+  .pac b { color:var(--c); margin-right:4px; }
+  .pac.compareceu { background:var(--ok-claro); border-color:transparent; } .pac.faltou { text-decoration:line-through; color:var(--suave); }
+  .bloco.bloq { background:repeating-linear-gradient(135deg, var(--erro-claro) 0 8px, #fff 8px 16px); border-top-color:var(--erro); }
+  .legenda { display:flex; gap:18px; flex-wrap:wrap; font-size:var(--t-sm); margin-top:12px; color:var(--suave); align-items:center; }
+  .legenda i.cor { display:inline-block; width:12px; height:12px; border-radius:var(--r-marca); margin-right:6px; vertical-align:-1px; }
+  .legenda .boxes { display:inline-flex; vertical-align:-1px; margin-right:6px; color:var(--campo); }
+  .sem { color:var(--suave); font-size:var(--t-sm); padding:14px 10px; }
 </style>{% endblock %}
 {% block conteudo %}
 {% set colunas = dias|length %}
+{% set largura = '340px' if visao == 'dia' else '200px' %}
 <form class="barra-agenda" method="get">
-  <a class="mais" href="/agendar" title="Agendar paciente">+</a>
-  <select name="professor" onchange="this.form.submit()">
-    <option value="">Todos os professores</option>
-    {% for p in professores %}<option {{ 'selected' if p == professor }}>{{ p }}</option>{% endfor %}
-  </select>
-  <select name="turma" onchange="this.form.submit()">
-    <option value="">Todas as turmas</option>
-    {% for t in turmas %}<option {{ 'selected' if t == turma }}>{{ t }}</option>{% endfor %}
-  </select>
-  <a class="btn sec" href="?visao={{ visao }}&turma={{ turma }}&professor={{ professor }}">Hoje</a>
-  <a class="btn sec" href="?semana={{ anterior }}&visao={{ visao }}&turma={{ turma }}&professor={{ professor }}">‹</a>
-  <a class="btn sec" href="?semana={{ proxima }}&visao={{ visao }}&turma={{ turma }}&professor={{ professor }}">›</a>
-  <input type="date" name="semana" value="{{ ref }}" onchange="this.form.submit()">
-  <select name="visao" onchange="this.form.submit()">
+  <h1>{% if visao == 'dia' %}{{ DIAS_SEMANA[ref.weekday()] }}, {{ ref.strftime('%d/%m') }}{% else %}Semana de {{ seg.strftime('%d/%m') }}{% endif %}</h1>
+  <span class="navega">
+    <a href="?semana={{ anterior }}&visao={{ visao }}&turma={{ turma }}&professor={{ professor }}" aria-label="Anterior">‹</a>
+    <a href="?visao={{ visao }}&turma={{ turma }}&professor={{ professor }}">Hoje</a>
+    <a href="?semana={{ proxima }}&visao={{ visao }}&turma={{ turma }}&professor={{ professor }}" aria-label="Próxima">›</a>
+  </span>
+  <input type="date" name="semana" value="{{ ref }}" onchange="this.form.submit()" aria-label="Ir para a data">
+  <select name="visao" onchange="this.form.submit()" aria-label="Visão">
     <option value="semana" {{ 'selected' if visao == 'semana' }}>Semana</option>
     <option value="dia" {{ 'selected' if visao == 'dia' }}>Dia</option>
   </select>
-  <span class="periodo">{% if visao == 'dia' %}{{ DIAS_SEMANA[ref.weekday()] }}, {{ ref.strftime('%d/%m/%Y') }}{% else %}{{ seg.strftime('%d/%m') }} – {{ dias[-1][0].strftime('%d/%m/%Y') }}{% endif %}</span>
+  <select name="turma" onchange="this.form.submit()" aria-label="Turma">
+    <option value="">Todas as turmas</option>
+    {% for t in turmas %}<option {{ 'selected' if t == turma }}>{{ t }}</option>{% endfor %}
+  </select>
+  <select name="professor" onchange="this.form.submit()" aria-label="Professor">
+    <option value="">Todos os professores</option>
+    {% for p in professores %}<option {{ 'selected' if p == professor }}>{{ p }}</option>{% endfor %}
+  </select>
+  <span class="direita"><a class="btn" href="/agendar">Agendar paciente</a></span>
 </form>
 
 <div class="grade-agenda" style="--px:{{ px_hora }}px">
-  <div class="cab" style="grid-template-columns:56px repeat({{ colunas }}, minmax({{ '320px' if visao == 'dia' else '170px' }}, 1fr))">
+  <div class="cab" style="grid-template-columns:60px repeat({{ colunas }}, minmax({{ largura }}, 1fr))">
     <div></div>
-    {% for d, _ in dias %}<div class="{{ 'hoje' if d == hoje }}"><a href="?semana={{ d }}&visao=dia&turma={{ turma }}&professor={{ professor }}" style="color:inherit;text-decoration:none">{{ DIAS_SEMANA[d.weekday()][:3] }}.<b>{{ d.strftime('%d') }}</b></a></div>{% endfor %}
+    {% for d, _ in dias %}
+    <div class="{{ 'hoje' if d == hoje }}">
+      <a class="dia" href="?semana={{ d }}&visao=dia&turma={{ turma }}&professor={{ professor }}"><b>{{ d.strftime('%d') }}</b><span>{{ DIAS_SEMANA[d.weekday()] }}</span></a>
+      <div class="uso">
+        {% for u in boxes_dia[d] %}
+          {% if u.turmas|length > 1 or u.boxes %}
+          <span class="uso-boxes {{ 'excede' if u.excede else ('pendente' if not u.boxes or u.sem_alunos) }}" title="{{ u.turmas|join(' e ') }} na {{ u.espaco.nome }}">
+            {{ u.espaco.nome.replace('Clínica ', '') }}
+            {% if u.boxes and not u.sem_alunos %}<b>{{ u.duplas }}/{{ u.boxes }} boxes</b>{% elif u.boxes %}falta nº de alunos{% else %}boxes a definir{% endif %}
+          </span>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
   </div>
-  <div class="corpo" style="grid-template-columns:56px repeat({{ colunas }}, minmax({{ '320px' if visao == 'dia' else '170px' }}, 1fr)); height:{{ (h_fim - h_ini) * px_hora }}px">
-    <div class="horas">{% for h in range(h_ini, h_fim) %}<div>{{ '%02d' % h }}h00</div>{% endfor %}</div>
+  <div class="corpo" style="grid-template-columns:60px repeat({{ colunas }}, minmax({{ largura }}, 1fr)); height:{{ (h_fim - h_ini) * px_hora }}px">
+    <div class="horas">{% for h in range(h_ini, h_fim) %}<div>{{ '%02d' % h }}:00</div>{% endfor %}</div>
     {% for d, blocos in dias %}
-    <div class="coluna">
+    <div class="coluna {{ 'hoje' if d == hoje }}">
       {% for v, col, total in blocos %}
-        {% set cor = cores.get(v.sessao.turma, '#2563eb') %}
         {% set topo = ((v.inicio.hour - h_ini) * 60 + v.inicio.minute) * px_hora / 60 %}
         {% set altura = ((v.fim - v.inicio).total_seconds() / 60) * px_hora / 60 %}
         {% set ativos = v.ativos|sort(attribute='inicio') %}
         <a class="bloco {{ 'bloq' if v.bloqueada }}" href="/agenda/vaga/{{ v.id }}"
-           style="top:{{ topo }}px; height:{{ altura - 2 }}px; left:calc({{ 100 * col / total }}% + 3px); width:calc({{ 100 / total }}% - 6px); background:{{ cor }}14; border-color:{{ cor }}55">
-          <div class="t" style="color:{{ cor }}">{{ v.inicio.strftime('%H:%M') }}–{{ v.fim.strftime('%H:%M') }} · {{ v.sessao.turma }}</div>
-          <div class="i" title="{{ v.sessao.nome }}">{{ v.sessao.nome or v.sessao.areas }}</div>
-          <div class="i">{{ v.sessao.professor }}</div>
-          {% if v.bloqueada %}<div class="lot" style="color:var(--vermelho)">⛔ {{ v.motivo_bloqueio }}</div>
-          {% else %}<div class="lot">{{ ativos|length }}/{{ v.capacidade }} pacientes</div>{% endif %}
+           style="--c:{{ cores.get(v.sessao.turma, '#3557c9') }}; top:{{ topo + 2 }}px; height:{{ altura - 4 }}px; left:calc({{ 100 * col / total }}% + 4px); width:calc({{ 100 / total }}% - 8px)">
+          {% if visao == 'dia' or total == 1 %}
+          <div class="t">{{ v.sessao.turma }}<span>{{ v.inicio.strftime('%H:%M') }}–{{ v.fim.strftime('%H:%M') }}</span></div>
+          {% else %}
+          <div class="t" title="{{ v.sessao.turma }}, {{ v.inicio.strftime('%H:%M') }}–{{ v.fim.strftime('%H:%M') }}">{{ v.sessao.turma.split(' ')[0] }} sem.</div>
+          {% endif %}
+          <div class="n" title="{{ v.sessao.nome }}">{{ v.sessao.nome or v.sessao.areas }}</div>
+          <div class="p">{{ v.sessao.professor }}</div>
+          {% if v.bloqueada %}<div class="lot" style="color:var(--erro);font-weight:700">Bloqueado: {{ v.motivo_bloqueio }}</div>
+          {% else %}
+            <div class="boxes" title="{{ ativos|length }} de {{ v.capacidade }} vagas">{% for i in range([v.capacidade, ativos|length]|max) %}<i class="{{ 'encaixe' if i >= v.capacidade else ('ocupado' if i < ativos|length) }}"></i>{% endfor %}</div>
+            <div class="lot">{{ ativos|length }}/{{ v.capacidade }} vagas{% if visao == 'dia' and v.sessao.duplas %}, {{ v.sessao.duplas }} duplas{% endif %}</div>
+          {% endif %}
           {% for a in ativos %}
-            <div class="pac {{ a.status }}" style="border-color:{{ cor }}" title="{{ a.paciente.nome_exibicao }} — {{ a.descricao }}">
-              {% if a.hora %}<b>{{ a.hora.strftime('%H:%M') }}</b> {% endif %}{{ a.paciente.nome_exibicao }} · {{ a.descricao }}</div>
+            {% if visao == 'dia' %}
+            <div class="pac {{ a.status }}" title="{{ a.descricao }}">{% if a.hora %}<b>{{ a.hora.strftime('%H:%M') }}</b>{% endif %}{{ a.paciente.nome_exibicao }}<span class="suave">, {{ a.descricao }}</span>{% if a.aluno %}<span class="suave"> ({{ a.aluno }})</span>{% endif %}</div>
+            {% else %}
+            <div class="pac {{ a.status }}" title="{{ a.hora.strftime('%H:%M') + ' ' if a.hora }}{{ a.paciente.nome_exibicao }}: {{ a.descricao }}">{{ a.paciente.nome_exibicao.split(' ')[0] }}</div>
+            {% endif %}
           {% endfor %}
         </a>
       {% else %}<div class="sem">{% if d.weekday() < 5 %}Sem clínica{% endif %}</div>{% endfor %}
@@ -79,7 +122,8 @@
   </div>
 </div>
 <div class="legenda">
-  {% for t, c in cores.items() %}<span><i style="background:{{ c }}"></i>{{ t }}</span>{% endfor %}
-  <span><i style="background:repeating-linear-gradient(45deg,#fde8e6 0 3px,#fff 3px 6px);border:1px solid var(--vermelho)"></i>Dia bloqueado</span>
+  {% for t, c in cores.items() %}<span><i class="cor" style="background:{{ c }}"></i>{{ t }}</span>{% endfor %}
+  <span><span class="boxes"><i class="ocupado"></i><i></i></span>Vaga ocupada / livre</span>
+  <span><span class="boxes"><i class="encaixe"></i></span>Encaixe</span>
 </div>
 {% endblock %}

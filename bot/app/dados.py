@@ -18,7 +18,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from .agenda import gerar_vagas
-from .models import Especialidade, Etiqueta, Procedimento, SessaoClinica, Setor
+from .models import EspacoClinico, Especialidade, Etiqueta, Procedimento, SessaoClinica, Setor
 
 log = logging.getLogger("dados")
 PASTA = Path(__file__).resolve().parent.parent / "dados"
@@ -87,6 +87,13 @@ def carregar(s: Session) -> dict:
             s.add(Etiqueta(nome=l["nome"], cor=l.get("cor") or "#6b7280"))
             etiquetas.add(l["nome"])
 
+    espacos = {x.nome: x for x in s.scalars(select(EspacoClinico))}
+    for l in _ler("espacos.csv"):
+        if l["nome"] not in espacos:
+            espacos[l["nome"]] = EspacoClinico(nome=l["nome"], boxes=_int(l.get("boxes", "")))
+            s.add(espacos[l["nome"]])
+    s.flush()
+
     importadas = 0
     if not s.scalar(select(func.count(SessaoClinica.id))):
         for l in _ler("sessoes_clinica.csv"):
@@ -108,8 +115,14 @@ def carregar(s: Session) -> dict:
                     idade_min=_int(l.get("idade_min", "")),
                     idade_max=_int(l.get("idade_max", "")),
                     especialidades=areas,
+                    espaco=espacos.get(l.get("espaco", "")),
+                    alunos=_int(l.get("alunos", "")),
+                    pacientes_por_dupla=_int(l.get("pacientes_por_dupla", "")) or 1,
                 )
             )
+            s.flush()
+        for se in s.scalars(select(SessaoClinica)):
+            se.recalcular_vagas()
             importadas += 1
         s.flush()
 

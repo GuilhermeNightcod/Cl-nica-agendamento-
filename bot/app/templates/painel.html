@@ -22,9 +22,9 @@
 
 {% if remarcar %}
 <div class="caixa tabela" style="border-color:var(--vermelho)">
-  <h2>⛔ Pacientes em dias bloqueados (precisam ser remarcados)</h2>
+  <h2>Pacientes em dias bloqueados, para remarcar</h2>
   <table>{% for a in remarcar %}
-    <tr><td>{{ a.vaga.inicio.strftime('%d/%m %H:%M') }} · {{ a.vaga.sessao.turma }}</td>
+    <tr><td>{{ a.vaga.inicio.strftime('%d/%m %H:%M') }}<br><small>{{ a.vaga.sessao.turma }}</small></td>
       <td><a href="/pacientes/{{ a.paciente.id }}">{{ a.paciente.nome_exibicao }}</a> <small>{% if a.paciente.telefone %}{{ a.paciente.telefone|fone }}{% endif %}</small></td>
       <td>{{ a.descricao }}</td><td>{{ a.vaga.motivo_bloqueio }}</td>
       <td style="text-align:right"><a class="btn peq" href="/agendar?paciente_id={{ a.paciente.id }}&procedimento={{ 'proc:%d'|format(a.procedimento_id) if a.procedimento_id else 'esp:%d'|format(a.especialidade_id or 0) }}">Remarcar</a></td></tr>
@@ -45,14 +45,14 @@
 
 <div class="grade2">
   <div class="caixa tabela">
-    <h2>💬 Aguardando atendente (WhatsApp)</h2>
+    <h2>Aguardando atendente no WhatsApp</h2>
     <table>{% for c in humanos %}
       <tr><td><a href="/pacientes/{{ c.paciente.id }}">{{ c.paciente.nome_exibicao }}</a><br><small>{{ c.paciente.telefone|fone }}</small></td>
         <td>{{ c.motivo_humano }}</td><td>{{ c.atualizado_em.strftime('%d/%m %H:%M') }}</td></tr>
     {% else %}<tr><td class="vazio">Ninguém aguardando.</td></tr>{% endfor %}</table>
   </div>
   <div class="caixa tabela">
-    <h2>🔁 Começaram e não terminaram o agendamento</h2>
+    <h2>Começaram e não terminaram o agendamento</h2>
     <table>{% for c in abandonos %}
       <tr><td><a href="/pacientes/{{ c.paciente.id }}">{{ c.paciente.nome_exibicao }}</a><br><small>{{ c.paciente.telefone|fone }}</small></td>
         <td>parou em: {{ (c.contexto or {}).get('estado_anterior', c.estado) }}</td>

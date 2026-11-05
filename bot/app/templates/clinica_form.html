@@ -15,8 +15,16 @@
       <div><label>Dia da semana *</label><select name="dia_semana">{% for d in DIAS_SEMANA[:6] %}<option value="{{ loop.index0 }}" {{ 'selected' if se and se.dia_semana == loop.index0 }}>{{ d }}</option>{% endfor %}</select></div>
       <div><label>Início *</label><input type="time" name="hora_inicio" value="{{ se.hora_inicio.strftime('%H:%M') if se else '08:00' }}" required></div>
       <div><label>Fim *</label><input type="time" name="hora_fim" value="{{ se.hora_fim.strftime('%H:%M') if se else '12:00' }}" required></div>
-      <div><label>Pacientes por dia (vagas) *</label><input type="number" min="1" name="vagas" value="{{ se.vagas if se else 10 }}" required></div>
     </div>
+    <h3 style="margin-top:6px">Capacidade</h3>
+    <div class="campos">
+      <div><label>Clínica física</label><input name="espaco" list="espacos" value="{{ se.espaco.nome if se and se.espaco else (espacos[0].nome if espacos else '') }}" placeholder="ex.: Clínica Odontocase">
+        <datalist id="espacos">{% for e in espacos %}<option value="{{ e.nome }}">{% endfor %}</datalist></div>
+      <div><label>Alunos da turma nesta clínica</label><input type="number" min="1" name="alunos" id="alunos" value="{{ se.alunos if se and se.alunos else '' }}" placeholder="ex.: 24"></div>
+      <div><label>Pacientes por dupla</label><input type="number" min="1" name="pacientes_por_dupla" id="ppd" value="{{ se.pacientes_por_dupla if se else 1 }}"></div>
+      <div><label>Vagas de pacientes</label><input type="number" min="1" name="vagas" id="vagas" value="{{ se.vagas if se else 10 }}" required></div>
+    </div>
+    <p class="suave" id="calc" style="margin:-4px 0 14px;font-size:var(--t-sm)">Com o número de alunos, as vagas são calculadas: alunos ÷ 2 (duplas) × pacientes por dupla.</p>
     <label>Áreas atendidas * <small>(o bot e a recepção só oferecem este dia para essas áreas)</small></label>
     <div class="linha" style="margin-bottom:12px;gap:16px">
       {% for a in areas %}<label class="check"><input type="checkbox" name="areas" value="{{ a.id }}" {{ 'checked' if a.id in marcadas }}> {{ a.nome }}</label>{% endfor %}
@@ -32,4 +40,15 @@
     <p class="suave" style="font-size:13px">Ao salvar, as datas futuras são recriadas. Datas com pacientes nunca são apagadas: se deixarem de existir, ficam bloqueadas e aparecem em Indicadores para remarcar.</p>
   </form>
 </div>
+<script>
+(function () {
+  const a = document.getElementById('alunos'), p = document.getElementById('ppd'), v = document.getElementById('vagas'), c = document.getElementById('calc');
+  function calc() {
+    const al = parseInt(a.value), pp = Math.max(1, parseInt(p.value) || 1);
+    if (al > 0) { const d = Math.ceil(al / 2); v.value = d * pp; v.readOnly = true; c.textContent = `${al} alunos = ${d} duplas (${d} boxes). ${d} × ${pp} = ${d * pp} vagas de pacientes.`; }
+    else { v.readOnly = false; c.textContent = 'Sem o número de alunos, informe as vagas manualmente.'; }
+  }
+  a.addEventListener('input', calc); p.addEventListener('input', calc); calc();
+})();
+</script>
 {% endblock %}
