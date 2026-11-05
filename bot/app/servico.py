@@ -1,0 +1,111 @@
+"""Junta tudo: recebe mensagens, roda o fluxo, envia respostas e aciona o Chatwoot."""
+import logging
+
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from . import config
+from .chatwoot import ClienteChatwoot
+from .fluxo import Resultado, fmt_data, fmt_hora, processar, registrar
+from .mensagens import Entrada, Resposta, Texto, resumo
+from .models import Conversa, Mensagem, Paciente
+from .whatsapp import ClienteWhatsApp
+
+log = logging.getLogger("servico")
+
+
+class Servico:
+    def __init__(self, whatsapp=None, chatwoot=None) -> None:
+        self.whatsapp = whatsapp or ClienteWhatsApp()
+        self._chatwoot = chatwoot
+
+    @property
+    def chatwoot(self):
+        if self._chatwoot is None and config.chatwoot_ativo():
+            self._chatwoot = ClienteChatwoot()
+        return self._chatwoot
+
+    def enviar(self, telefone: str, respostas: list[Resposta]) -> None:
+        for r in respostas:
+            try:
+                self.whatsapp.enviar(telefone, r)
+            except Exception:
+                log.exception("Falha ao enviar mensagem para %s", telefone)
+
+    def receber(self, s: Session, e: Entrada) -> Resultado:
+        res = processar(s, e)
+        if res.duplicada:
+            return res
+        self.enviar(e.telefone, res.respostas)
+        p = s.scalar(select(Paciente).where(Paciente.telefone == e.telefone))
+        if res.chamar_humano:
+            self._abrir_humano(s, p, res.chamar_humano)
+        elif res.repassar_para_humano and self.chatwoot and p.conversa.chatwoot_conversa_id:
+            try:
+                self.chatwoot.mensagem_do_paciente(p.conversa.chatwoot_conversa_id, e.texto or f"[{e.tipo}]")
+            except Exception:
+                log.exception("Falha ao repassar mensagem ao Chatwoot")
+        return res
+
+    def _abrir_humano(self, s: Session, p: Paciente, motivo: str) -> None:
+        if not self.chatwoot:
+            log.warning("Paciente %s aguardando humano (Chatwoot não configurado): %s", p.telefone, motivo)
+            return
+        historico = s.scalars(
+            select(Mensagem).where(Mensagem.paciente_id == p.id).order_by(Mensagem.id.desc()).limit(12)
+        ).all()
+        prox = [a for a in p.agendamentos if a.status in ("agendado", "confirmado") and a.vaga.inicio >= config.agora()]
+        linhas = [
+            f"🤖 *Transferido pelo bot* — {motivo}",
+            f"Paciente: {p.nome or p.nome_perfil or '-'} | Tel: +{p.telefone}",
+            f"Nascimento: {p.data_nascimento:%d/%m/%Y}" if p.data_nascimento else "Nascimento: -",
+            f"Queixa: {(p.conversa.contexto or {}).get('queixa') or '-'}",
+        ]
+        if prox:
+            linhas.append(
+                "Próximos agendamentos: "
+                + "; ".join(f"{a.vaga.especialidade.nome} {fmt_data(a.vaga.inicio)} {fmt_hora(a.vaga.inicio)}" for a in prox)
+            )
+        linhas.append("\n— Últimas mensagens —")
+        for m in reversed(historico):
+            quem = "Paciente" if m.direcao == "entrada" else "Bot"
+            linhas.append(f"{quem}: {m.conteudo[:200]}")
+        try:
+            p.conversa.chatwoot_conversa_id = self.chatwoot.abrir_conversa(p, "\n".join(linhas))
+        except Exception:
+            log.exception("Falha ao abrir conversa no Chatwoot")
+
+    # ---- eventos vindos do Chatwoot -------------------------------------------------
+    def evento_chatwoot(self, s: Session, evento: dict) -> None:
+        tipo = evento.get("event")
+        conv_cw = evento.get("conversation") or {}
+        conv_id = conv_cw.get("id") or (evento.get("id") if tipo != "message_created" else None)
+        if not conv_id:
+            return
+        conv = s.scalar(select(Conversa).where(Conversa.chatwoot_conversa_id == conv_id))
+        if not conv:
+            return
+        p = conv.paciente
+
+        if tipo == "message_created":
+            if evento.get("message_type") != "outgoing" or evento.get("private"):
+                return
+            texto = (evento.get("content") or "").strip()
+            if not texto:
+                return
+            conv.atendimento_humano = True  # atendente assumiu a conversa
+            conv.estado = "humano"
+            registrar(s, p, "saida", f"[atendente] {texto}")
+            self.enviar(p.telefone, [Texto(texto)])
+
+        elif tipo == "conversation_status_changed":
+            status = evento.get("status") or conv_cw.get("status")
+            if status == "resolved" and conv.atendimento_humano:
+                conv.atendimento_humano = False
+                conv.motivo_humano = None
+                conv.estado = "inicio"
+                conv.contexto = {}
+                from . import textos as T
+
+                registrar(s, p, "saida", resumo(Texto(T.ATENDIMENTO_ENCERRADO)))
+                self.enviar(p.telefone, [Texto(T.ATENDIMENTO_ENCERRADO)])

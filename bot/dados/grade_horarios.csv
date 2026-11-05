@@ -1,0 +1,13 @@
+especialidade;dia_semana;hora;vagas
+triagem;seg;08:00;6
+triagem;qua;14:00;6
+triagem;sex;08:00;6
+clinica_geral;seg;14:00;8
+clinica_geral;qui;08:00;8
+endodontia;ter;08:00;4
+endodontia;qui;14:00;4
+periodontia;qua;08:00;5
+protese;ter;14:00;4
+protese;sex;14:00;4
+odontopediatria;qua;19:00;4
+cirurgia;seg;19:00;3

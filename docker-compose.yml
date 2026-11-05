@@ -1,0 +1,101 @@
+# Central Inteligente de Atendimento Odontológico
+# Sobe tudo com:   docker compose up -d
+#
+#  bot        -> nosso sistema (WhatsApp + fluxo + agenda + painel)   http://localhost:8000/painel
+#  chatwoot   -> caixa de atendimento humano (código aberto, MIT)      http://localhost:3000
+#  postgres   -> banco de dados (um banco para o bot, outro para o Chatwoot)
+#  redis      -> fila interna do Chatwoot
+
+x-chatwoot-env: &chatwoot-env
+  RAILS_ENV: production
+  NODE_ENV: production
+  INSTALLATION_ENV: docker
+  SECRET_KEY_BASE: ${CHATWOOT_SECRET_KEY_BASE}
+  FRONTEND_URL: ${CHATWOOT_FRONTEND_URL:-http://localhost:3000}
+  DEFAULT_LOCALE: pt_BR
+  ENABLE_ACCOUNT_SIGNUP: "false"
+  FORCE_SSL: "false"
+  POSTGRES_HOST: postgres
+  POSTGRES_USERNAME: postgres
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+  POSTGRES_DATABASE: chatwoot
+  REDIS_URL: redis://redis:6379
+  RAILS_LOG_TO_STDOUT: "true"
+  ACTIVE_STORAGE_SERVICE: local
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: odonto
+    volumes:
+      - postgres_dados:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis_dados:/data
+
+  bot:
+    build: ./bot
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://postgres:${POSTGRES_PASSWORD}@postgres:5432/odonto
+      CHATWOOT_URL: http://chatwoot:3000
+    volumes:
+      - ./bot/dados:/app/dados   # planilhas de especialidades/horários editáveis
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  chatwoot:
+    image: chatwoot/chatwoot:${CHATWOOT_VERSAO:-v4.19.1-ce}
+    restart: unless-stopped
+    environment: *chatwoot-env
+    entrypoint: docker/entrypoints/rails.sh
+    command: sh -c "bundle exec rails db:chatwoot_prepare && bundle exec rails s -p 3000 -b 0.0.0.0"
+    volumes:
+      - chatwoot_arquivos:/app/storage
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  chatwoot-worker:
+    image: chatwoot/chatwoot:${CHATWOOT_VERSAO:-v4.19.1-ce}
+    restart: unless-stopped
+    environment: *chatwoot-env
+    command: bundle exec sidekiq -C config/sidekiq.yml
+    volumes:
+      - chatwoot_arquivos:/app/storage
+    depends_on:
+      - chatwoot
+
+  # Endereço público temporário (https) para a Meta conseguir chamar o bot
+  # durante os testes. Ligue com:  docker compose --profile tunel up -d
+  # e veja o endereço com:         docker compose logs tunel | grep trycloudflare
+  tunel:
+    image: cloudflare/cloudflared:latest
+    profiles: ["tunel"]
+    command: tunnel --no-autoupdate --url http://bot:8000
+    depends_on:
+      - bot
+
+volumes:
+  postgres_dados:
+  redis_dados:
+  chatwoot_arquivos:

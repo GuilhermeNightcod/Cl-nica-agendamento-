@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Painel — {{ clinica }}</title>
+<style>
+  :root { --azul:#0f5c8c; --cinza:#f3f5f7; --borda:#dde3e8; --texto:#1d2a33; --verde:#1b7f4b; --vermelho:#b42318; --amarelo:#a15c07; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color:var(--texto); background:var(--cinza); }
+  header { background:var(--azul); color:#fff; padding:16px 24px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; }
+  header h1 { font-size:18px; margin:0; }
+  header a, header button { color:#fff; background:rgba(255,255,255,.15); border:0; padding:8px 12px; border-radius:6px; text-decoration:none; font-size:13px; cursor:pointer; }
+  main { padding:24px; max-width:1200px; margin:0 auto; }
+  .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px; margin-bottom:24px; }
+  .card { background:#fff; border:1px solid var(--borda); border-radius:10px; padding:16px; }
+  .card .valor { font-size:28px; font-weight:700; }
+  .card .rotulo { font-size:13px; color:#5b6b76; }
+  section { background:#fff; border:1px solid var(--borda); border-radius:10px; padding:16px; margin-bottom:20px; overflow-x:auto; }
+  h2 { font-size:16px; margin:0 0 12px; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  th, td { text-align:left; padding:8px; border-bottom:1px solid var(--borda); vertical-align:top; }
+  th { font-size:12px; text-transform:uppercase; color:#5b6b76; }
+  .tag { display:inline-block; padding:2px 8px; border-radius:99px; font-size:12px; background:var(--cinza); }
+  .confirmado,.compareceu { background:#e3f4ea; color:var(--verde); }
+  .faltou { background:#fde8e6; color:var(--vermelho); }
+  .agendado { background:#fff3dc; color:var(--amarelo); }
+  form { display:inline; }
+  .btn { font-size:12px; padding:4px 8px; border:1px solid var(--borda); background:#fff; border-radius:5px; cursor:pointer; }
+  .barra { background:var(--cinza); border-radius:4px; height:10px; width:160px; display:inline-block; vertical-align:middle; }
+  .barra > span { display:block; height:100%; background:var(--azul); border-radius:4px; }
+  .grade { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  @media (max-width: 800px) { .grade { grid-template-columns:1fr; } }
+  .vazio { color:#5b6b76; font-size:14px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🦷 {{ clinica }} — Painel</h1>
+  <div>
+    <a href="/painel/agendamentos.csv">Baixar agendamentos (Excel)</a>
+    <form method="post" action="/painel/recarregar-agenda"><button>Recarregar agenda</button></form>
+  </div>
+</header>
+<main>
+  <div class="cards">
+    <div class="card"><div class="valor">{{ ind.contatos_7 }}</div><div class="rotulo">Novos contatos (7 dias)</div></div>
+    <div class="card"><div class="valor">{{ ind.contatos_30 }}</div><div class="rotulo">Novos contatos (30 dias)</div></div>
+    <div class="card"><div class="valor">{{ ind.agendamentos_7 }}</div><div class="rotulo">Agendamentos feitos (7 dias)</div></div>
+    <div class="card"><div class="valor">{{ ind.conversao }}%</div><div class="rotulo">Contatos que agendaram (30 dias)</div></div>
+    <div class="card"><div class="valor">{{ ind.faltas_pct }}%</div><div class="rotulo">Taxa de faltas (30 dias)</div></div>
+    <div class="card"><div class="valor">{{ humanos|length }}</div><div class="rotulo">Aguardando atendente</div></div>
+  </div>
+
+  <section>
+    <h2>Próximos agendamentos</h2>
+    {% if prox %}
+    <table>
+      <tr><th>Data</th><th>Especialidade</th><th>Paciente</th><th>Queixa</th><th>Status</th><th>Ações</th></tr>
+      {% for a in prox %}
+      <tr>
+        <td>{{ a.vaga.inicio.strftime('%d/%m %H:%M') }}</td>
+        <td>{{ a.vaga.especialidade.nome }}</td>
+        <td>{{ a.paciente.nome or a.paciente.nome_perfil }}<br><small>+{{ a.paciente.telefone }}</small></td>
+        <td>{{ a.queixa or '' }}</td>
+        <td><span class="tag {{ a.status }}">{{ a.status }}</span></td>
+        <td>
+          {% for st, rot in [('compareceu','Compareceu'),('faltou','Faltou'),('cancelado','Cancelar')] %}
+          <form method="post" action="/painel/agendamento/{{ a.id }}"><input type="hidden" name="status" value="{{ st }}"><button class="btn">{{ rot }}</button></form>
+          {% endfor %}
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% else %}<p class="vazio">Nenhum agendamento ainda.</p>{% endif %}
+  </section>
+
+  <div class="grade">
+    <section>
+      <h2>Ocupação das próximas 4 semanas</h2>
+      {% if ind.ocupacao %}
+      <table>
+        {% for nome, ocup, cap in ind.ocupacao %}
+        <tr><td>{{ nome }}</td><td>{{ ocup }}/{{ cap }}</td>
+          <td><span class="barra"><span style="width: {{ (100 * ocup / cap)|round|int if cap else 0 }}%"></span></span></td></tr>
+        {% endfor %}
+      </table>
+      {% else %}<p class="vazio">Sem vagas cadastradas nas próximas semanas.</p>{% endif %}
+    </section>
+    <section>
+      <h2>Lista de espera</h2>
+      {% if espera %}
+      <table>
+        <tr><th>Desde</th><th>Especialidade</th><th>Paciente</th><th>Turno</th><th></th></tr>
+        {% for e in espera %}
+        <tr><td>{{ e.criado_em.strftime('%d/%m') }}</td><td>{{ e.especialidade.nome }}</td>
+          <td>{{ e.paciente.nome or e.paciente.nome_perfil }}<br><small>+{{ e.paciente.telefone }}</small></td>
+          <td>{{ e.turno or '-' }}</td>
+          <td><form method="post" action="/painel/espera/{{ e.id }}"><button class="btn">Resolvido</button></form></td></tr>
+        {% endfor %}
+      </table>
+      {% else %}<p class="vazio">Ninguém na lista de espera.</p>{% endif %}
+    </section>
+  </div>
+
+  <div class="grade">
+    <section>
+      <h2>Aguardando atendente humano</h2>
+      {% if humanos %}
+      <table>
+        {% for c in humanos %}
+        <tr><td>{{ c.paciente.nome or c.paciente.nome_perfil or '-' }}<br><small>+{{ c.paciente.telefone }}</small></td>
+          <td>{{ c.motivo_humano }}</td><td>{{ c.atualizado_em.strftime('%d/%m %H:%M') }}</td></tr>
+        {% endfor %}
+      </table>
+      {% else %}<p class="vazio">Ninguém aguardando.</p>{% endif %}
+    </section>
+    <section>
+      <h2>Começaram e não terminaram o agendamento</h2>
+      {% if abandonos %}
+      <table>
+        {% for c in abandonos %}
+        <tr><td>{{ c.paciente.nome or c.paciente.nome_perfil or '-' }}<br><small>+{{ c.paciente.telefone }}</small></td>
+          <td>parou em: {{ (c.contexto or {}).get('estado_anterior', c.estado) }}</td>
+          <td>{{ c.atualizado_em.strftime('%d/%m %H:%M') }}</td>
+          <td>{% if c.recuperacao_enviada_em %}<span class="tag">lembrado</span>{% endif %}</td></tr>
+        {% endfor %}
+      </table>
+      {% else %}<p class="vazio">Nenhum agendamento abandonado.</p>{% endif %}
+    </section>
+  </div>
+</main>
+</body>
+</html>
