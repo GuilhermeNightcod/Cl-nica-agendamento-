@@ -14,7 +14,7 @@ from sqlalchemy import func, or_, select
 from .. import atendimentos as A
 from .. import config
 from ..db import sessao
-from ..models import Atendimento, Conversa, Etiqueta, Mensagem, Paciente, Setor, atendimento_etiqueta
+from ..models import Atendimento, Conversa, Usuario, Etiqueta, Mensagem, Paciente, Setor, atendimento_etiqueta
 from . import rotas
 from .rotas import coordenacao, int_ou_none, ir, registrar_acesso, render, templates, usuario
 
@@ -129,7 +129,7 @@ def caixa(request: Request, aba: str = "fila", busca: str = "", setor: str = "",
             "abas": ABAS, "contagens": _contagens(s, u), "busca": busca, "setor": setor, "etiqueta": etiqueta, "agente": agente,
             "setores": s.scalars(select(Setor).where(Setor.ativo).order_by(Setor.nome)).all(),
             "etiquetas": s.scalars(select(Etiqueta).order_by(Etiqueta.nome)).all(),
-            "agentes": sorted(config.usuarios()),
+            "agentes": list(s.scalars(select(Usuario.login).where(Usuario.ativo).order_by(Usuario.login))),
             "filtros_ativos": sum(bool(x) for x in (setor, etiqueta, agente)),
         }
         return render(request, "atendimentos.html", **ctx)

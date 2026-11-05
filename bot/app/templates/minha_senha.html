@@ -1,0 +1,14 @@
+{% extends "base.html" %}{% block titulo %}Minha senha{% endblock %}
+{% block conteudo %}
+<div class="caixa" style="max-width:520px">
+  <h1>{{ 'Crie sua senha' if obrigatoria else 'Trocar senha' }}</h1>
+  <p class="sub">{% if obrigatoria %}Você entrou com uma senha provisória. Crie uma senha só sua para continuar.{% else %}Use pelo menos 8 caracteres. Uma frase curta é fácil de lembrar e difícil de adivinhar.{% endif %}</p>
+  <form method="post" action="/minha-senha">
+    <div style="margin-bottom:14px"><label for="atual">{{ 'Senha provisória' if obrigatoria else 'Senha atual' }}</label><input id="atual" name="atual" type="password" autocomplete="current-password" required autofocus></div>
+    <div style="margin-bottom:14px"><label for="nova">Nova senha</label><input id="nova" name="nova" type="password" autocomplete="new-password" minlength="8" required></div>
+    <div style="margin-bottom:20px"><label for="confirmar">Repita a nova senha</label><input id="confirmar" name="confirmar" type="password" autocomplete="new-password" minlength="8" required></div>
+    <button class="btn">Salvar senha</button>
+    {% if obrigatoria %}<a class="btn sec" href="/sair" style="margin-left:6px">Sair</a>{% endif %}
+  </form>
+</div>
+{% endblock %}

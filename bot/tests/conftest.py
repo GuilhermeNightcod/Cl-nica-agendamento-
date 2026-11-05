@@ -14,6 +14,7 @@ os.environ.update(
     WHATSAPP_TOKEN="",
     CHATWOOT_WEBHOOK_TOKEN="cw123",
     USUARIOS="coord:senha:coordenacao,recep:senha2:recepcao",
+    TROCAR_SENHA_INICIAL="nao",
     ARQUIVOS_DIR=str(Path(tempfile.mkdtemp()) / "arquivos"),
 )
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))

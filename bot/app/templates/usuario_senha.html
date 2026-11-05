@@ -1,0 +1,17 @@
+{% extends "base.html" %}{% block titulo %}Senha provisória{% endblock %}
+{% block conteudo %}
+<a class="voltar" href="/usuarios">‹ Usuários</a>
+<div class="caixa" style="max-width:620px;border-top:5px solid var(--campo)">
+  <h1>{{ 'Usuário criado' if criado else 'Senha redefinida' }}</h1>
+  <p class="sub">Passe estes dados para <b>{{ alvo.nome }}</b>. A senha aparece só agora: anote antes de sair desta tela.</p>
+  <dl class="fatos" style="gap:16px 48px;margin-bottom:18px">
+    <div><dt>Usuário</dt><dd style="font-size:var(--t-xl)">{{ alvo.login }}</dd></div>
+    <div><dt>Senha provisória</dt><dd style="font-size:var(--t-xl);letter-spacing:.04em" id="senha">{{ senha }}</dd></div>
+  </dl>
+  <div class="linha">
+    <button class="btn sec" type="button" onclick="navigator.clipboard.writeText('Usuário: {{ alvo.login }}\nSenha provisória: {{ senha }}').then(() => this.textContent = 'Copiado')">Copiar</button>
+    <a class="btn" href="/usuarios">Pronto</a>
+  </div>
+  <p class="suave" style="font-size:var(--t-sm);margin:16px 0 0">No primeiro acesso, o sistema pede para a pessoa criar a própria senha.</p>
+</div>
+{% endblock %}

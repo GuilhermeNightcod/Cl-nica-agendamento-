@@ -51,6 +51,9 @@ CHATWOOT_WEBHOOK_TOKEN = _env("CHATWOOT_WEBHOOK_TOKEN", "troque-este-token")
 # Papéis: recepcao | coordenacao  (coordenação também configura as clínicas)
 USUARIOS = _env("USUARIOS", "coordenacao:troque-esta-senha:coordenacao,recepcao:troque-esta-senha:recepcao")
 CHAVE_SESSAO = _env("CHAVE_SESSAO", "troque-por-um-texto-aleatorio")
+# Os usuários de USUARIOS só são usados na PRIMEIRA vez que o sistema liga; depois, a coordenação
+# cria e gerencia os logins na tela "Usuários". No primeiro acesso cada um troca a senha.
+TROCAR_SENHA_INICIAL = _env("TROCAR_SENHA_INICIAL", "sim").lower() not in ("nao", "não", "0", "false")
 ARQUIVOS_DIR = _env("ARQUIVOS_DIR", "./arquivos")
 TAMANHO_MAX_ARQUIVO_MB = int(_env("TAMANHO_MAX_ARQUIVO_MB", "20"))
 

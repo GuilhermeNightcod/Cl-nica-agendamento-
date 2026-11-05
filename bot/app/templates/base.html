@@ -25,10 +25,12 @@
   {% if usuario.papel == 'coordenacao' %}
   <div class="grupo">Coordenação</div>
   <a href="/clinicas" class="nav {{ 'ativo' if atual.startswith('/clinicas') }}"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg><span>Clínicas</span></a>
+  <a href="/usuarios" class="nav {{ 'ativo' if atual.startswith('/usuarios') }}"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg><span>Usuários</span></a>
   <a href="/acessos" class="nav {{ 'ativo' if atual.startswith('/acessos') }}"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/></svg><span>Acessos</span></a>
   {% endif %}
   <div class="rodape">
-    <div class="quem"><b>{{ usuario.login[:1]|upper }}</b><span>{{ usuario.login }}<small>{{ 'Coordenação' if usuario.papel == 'coordenacao' else 'Recepção' }}</small></span></div>
+    <div class="quem"><b>{{ (usuario.nome or usuario.login)[:1]|upper }}</b><span>{{ usuario.nome or usuario.login }}<small>{{ 'Coordenação' if usuario.papel == 'coordenacao' else 'Recepção' }}</small></span></div>
+    <a href="/minha-senha" class="nav {{ 'ativo' if atual.startswith('/minha-senha') }}"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><span>Minha senha</span></a>
     <a class="nav" href="/sair"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10"/></svg><span>Sair</span></a>
   </div>
 </aside>

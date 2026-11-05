@@ -106,8 +106,9 @@ deduplicação, ordem) e os limites de tamanho do WhatsApp.
 ## Dívidas técnicas / próximos passos
 
 - **Migrações**: hoje usa `create_all`. Adotar **Alembic** antes de ir para produção.
-- **Senhas**: hoje ficam em texto no `.env`. Para produção, criar uma tabela de usuários com hash (argon2/bcrypt),
-  troca de senha e bloqueio após tentativas.
+- **Usuários**: tabela `usuarios`, senha com scrypt (stdlib), senha provisória com troca obrigatória,
+  bloqueio de 15 min após 5 erros, usuário desativado perde a sessão na hora (conferido a cada requisição).
+  Falta: recuperação de senha por e-mail e autenticação em dois fatores.
 - **Armazenamento**: arquivos no disco local. Para várias máquinas ou backup fácil, usar S3/MinIO com criptografia.
 - **Prontuário com valor legal**: assinatura ICP-Brasil (Lei 13.787/2018) se a faculdade quiser descartar o papel.
 - **Vários processos**: a fila é por processo. Para escalar horizontalmente, usar Redis/RQ

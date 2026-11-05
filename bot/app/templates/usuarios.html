@@ -1,0 +1,27 @@
+{% extends "base.html" %}{% block titulo %}Usuários{% endblock %}
+{% block conteudo %}
+<div class="cabeca-pag">
+  <div><h1>Usuários</h1><p class="sub">Quem pode entrar no sistema. Crie um login para cada pessoa: o registro de acessos mostra quem fez o quê.</p></div>
+  <a class="btn" href="/usuarios/novo">Novo usuário</a>
+</div>
+<div class="caixa tabela">
+  <table>
+    <tr><th>Nome</th><th>Usuário</th><th>Papel</th><th>Situação</th><th>Último acesso</th><th></th></tr>
+    {% for t in todos %}
+    <tr style="{{ 'opacity:.55' if not t.ativo }}">
+      <td><b>{{ t.nome }}</b>{% if t.login == usuario.login %} <span class="tag">você</span>{% endif %}</td>
+      <td>{{ t.login }}</td>
+      <td><span class="tag {{ 'confirmado' if t.papel == 'coordenacao' }}">{{ t.papel_nome }}</span></td>
+      <td>{% if not t.ativo %}<span class="tag cancelado">desativado</span>
+          {% elif t.bloqueado_ate and t.bloqueado_ate > now %}<span class="tag faltou">bloqueado por tentativas</span>
+          {% elif t.trocar_senha %}<span class="tag agendado">aguardando 1º acesso</span>
+          {% else %}<span class="suave">ativo</span>{% endif %}</td>
+      <td>{{ t.ultimo_acesso_em.strftime('%d/%m/%Y %H:%M') if t.ultimo_acesso_em else '—' }}</td>
+      <td style="text-align:right;white-space:nowrap"><a class="btn sec peq" href="/usuarios/{{ t.id }}">Editar</a></td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+<p class="suave" style="font-size:var(--t-sm);max-width:75ch">Recepção: agenda, atendimentos, pacientes, odontograma, prontuário e indicadores.
+Coordenação: tudo isso, mais configurar clínicas, gerenciar usuários e ver o registro de acessos.</p>
+{% endblock %}

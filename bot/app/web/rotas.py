@@ -44,6 +44,7 @@ from ..models import (
     STATUS_DENTE,
     RegistroAcesso,
     RegistroDente,
+    Usuario,
     SessaoClinica,
     Vaga,
 )
@@ -95,6 +96,16 @@ def usuario(request: Request) -> dict:
     u = request.session.get("usuario")
     if not u:
         raise Redirecionar("/entrar?" + urlencode({"voltar": str(request.url.path)}))
+    # confere a cada acesso: usuário desativado ou com papel trocado vale na hora
+    with sessao() as s:
+        cad = s.scalar(select(Usuario).where(Usuario.login == u["login"]))
+        if not cad or not cad.ativo:
+            request.session.clear()
+            raise Redirecionar("/entrar?" + urlencode({"erro": "Sua sessão foi encerrada. Entre novamente."}))
+        u = {"login": cad.login, "papel": cad.papel, "nome": cad.nome, "trocar_senha": cad.trocar_senha}
+    request.session["usuario"] = u
+    if u["trocar_senha"] and request.url.path not in ("/minha-senha", "/sair"):
+        raise Redirecionar("/minha-senha")
     return u
 
 
@@ -129,10 +140,19 @@ def tela_entrar(request: Request, voltar: str = "/agenda"):
 
 @router.post("/entrar")
 def entrar(request: Request, login: str = Form(...), senha: str = Form(...), voltar: str = Form("/agenda")):
-    cad = config.usuarios().get(login.strip().lower())
-    if not cad or not secrets.compare_digest(senha, cad[0]):
-        return ir("/entrar", erro="Usuário ou senha incorretos.", voltar=voltar)
-    request.session["usuario"] = {"login": login.strip().lower(), "papel": cad[1]}
+    from ..usuarios import ErroUsuario, autenticar
+
+    with sessao() as s:
+        try:
+            u = autenticar(s, login, senha)
+        except ErroUsuario as e:
+            erro = str(e)
+            u = None
+        if u:
+            request.session["usuario"] = {"login": u.login, "papel": u.papel, "nome": u.nome, "trocar_senha": u.trocar_senha}
+            s.add(RegistroAcesso(usuario=u.login, acao="entrou no sistema"))
+    if not u:
+        return ir("/entrar", erro=erro, voltar=voltar)
     return ir(voltar if voltar.startswith("/") and not voltar.startswith("//") else "/agenda")
 
 

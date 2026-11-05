@@ -279,6 +279,29 @@ class Documento(Base):
         return self.tipo_arquivo.startswith("image/")
 
 
+class Usuario(Base):
+    """Pessoa que entra no sistema (recepção ou coordenação)."""
+
+    __tablename__ = "usuarios"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    login: Mapped[str] = mapped_column(String(40), unique=True, index=True)
+    nome: Mapped[str] = mapped_column(String(120))
+    senha_hash: Mapped[str] = mapped_column(String(300))
+    papel: Mapped[str] = mapped_column(String(20), default="recepcao")  # recepcao | coordenacao
+    ativo: Mapped[bool] = mapped_column(Boolean, default=True)
+    trocar_senha: Mapped[bool] = mapped_column(Boolean, default=True)  # senha provisória
+    tentativas_falhas: Mapped[int] = mapped_column(Integer, default=0)
+    bloqueado_ate: Mapped[datetime | None] = mapped_column(DateTime)
+    ultimo_acesso_em: Mapped[datetime | None] = mapped_column(DateTime)
+    criado_por: Mapped[str | None] = mapped_column(String(40))
+    criado_em: Mapped[datetime] = mapped_column(DateTime, default=agora)
+
+    @property
+    def papel_nome(self) -> str:
+        return "Coordenação" if self.papel == "coordenacao" else "Recepção"
+
+
 class RegistroAcesso(Base):
     """Quem viu ou alterou dados de paciente, e quando (LGPD)."""
 

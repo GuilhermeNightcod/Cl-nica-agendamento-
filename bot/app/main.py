@@ -34,6 +34,10 @@ async def ciclo_de_vida(app: FastAPI):
     criar_tabelas()
     with sessao() as s:
         log.info("Dados carregados: %s", dados.carregar(s))
+        from .usuarios import criar_iniciais
+
+        if n := criar_iniciais(s):
+            log.info("Criados %s usuários iniciais a partir de USUARIOS do .env", n)
     tarefa = asyncio.create_task(_loop_tarefas())
     yield
     tarefa.cancel()
@@ -96,8 +100,9 @@ async def webhook_chatwoot(request: Request, token: str = ""):
 
 
 # ------------------------------------------------------------------ Sistema da clínica
-from .web import atendimento_rotas, rotas  # noqa: E402
+from .web import atendimento_rotas, rotas, usuario_rotas  # noqa: E402
 
 rotas.servico = servico
+app.include_router(usuario_rotas.router)
 app.include_router(atendimento_rotas.router)
 app.include_router(rotas.router)

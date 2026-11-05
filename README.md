@@ -46,7 +46,8 @@ Cada clínica pode ter **faixa etária**: Adolescente (10 a 19 anos), Criança (
 | **Lista de espera** | Recepção | Quem não encontrou vaga, com botão para agendar quando abrir |
 | **Indicadores** | Coordenação | Novos pacientes, % que agendou, faltas, ocupação de cada clínica, pacientes de dias bloqueados para remarcar, conversas abandonadas no WhatsApp |
 | **Clínicas** | Coordenação | Cadastrar e editar os dias de clínica de cada turma. Ao salvar, a agenda do semestre é refeita |
-| **Acessos** | Coordenação | Quem abriu fichas, viu documentos ou mudou dados (LGPD) |
+| **Usuários** | Coordenação | Criar login para cada pessoa (recepção ou coordenação), gerar senha provisória, redefinir senha esquecida e desativar quem saiu |
+| **Acessos** | Coordenação | Quem entrou, abriu fichas, viu documentos ou mudou dados (LGPD) |
 
 ### Atendimentos (WhatsApp) 💬
 Quando o bot detecta urgência ou o paciente pede um atendente, a conversa entra na **fila** do setor
@@ -146,7 +147,7 @@ Digite `oi` e responda com os **números** das opções. Comandos: `/reset` (com
 cp .env.example .env
 ```
 Abra o `.env` e preencha pelo menos: `POSTGRES_PASSWORD`, `CHATWOOT_SECRET_KEY_BASE`,
-`CHAVE_SESSAO`, `USUARIOS` (um login para cada pessoa da recepção e da coordenação),
+`CHAVE_SESSAO`, `USUARIOS` (só o primeiro login da coordenação; os outros são criados na tela **Usuários**),
 `SEMESTRE_INICIO` e `SEMESTRE_FIM`.
 
 ### Passo 3: subir tudo
