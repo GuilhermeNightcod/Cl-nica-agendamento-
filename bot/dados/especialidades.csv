@@ -1,9 +1,9 @@
-codigo;nome;descricao;ativa
-triagem;Triagem / Avaliação;Primeira consulta para avaliar e encaminhar;sim
-clinica_geral;Clínica Geral;Limpeza, restaurações e extrações simples;sim
-endodontia;Endodontia;Tratamento de canal;sim
-periodontia;Periodontia;Tratamento de gengiva;sim
-protese;Prótese;Dentaduras, coroas e pontes;sim
-odontopediatria;Odontopediatria;Atendimento para crianças;sim
-cirurgia;Cirurgia;Extrações de siso e cirurgias orais;sim
-ortodontia;Ortodontia;Aparelho ortodôntico;nao
+codigo;nome;descricao;ativa;mostrar_no_bot
+triagem;Triagem / Anamnese;Primeira consulta: avaliação e encaminhamento;sim;sim
+clinica_geral;Clínica Geral;Limpeza, restaurações e procedimentos gerais;sim;sim
+endodontia;Endodontia;Tratamento de canal;sim;sim
+periodontia;Periodontia;Tratamento de gengiva;sim;sim
+protese;Prótese;Dentaduras, coroas e pontes;sim;sim
+cirurgia;Cirurgia;Extrações e pequenas cirurgias;sim;sim
+odontopediatria;Odontopediatria;Atendimento para crianças;sim;sim
+hebiatria;Hebiatria;Atendimento para adolescentes;sim;sim

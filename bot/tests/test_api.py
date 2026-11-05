@@ -37,10 +37,11 @@ def test_webhook_assinatura_e_processamento():
         # mesma mensagem reenviada pela Meta não é processada duas vezes
         c.post("/webhook", content=corpo, headers={"X-Hub-Signature-256": assinar(corpo), "Content-Type": "application/json"})
         fila.aguardar()
-        painel = c.get("/painel", auth=("coord", "senha"))
-        assert painel.status_code == 200 and "Novos contatos" in painel.text
-        assert c.get("/painel").status_code == 401
-        assert c.get("/painel/agendamentos.csv", auth=("coord", "senha")).status_code == 200
+        assert c.get("/painel", follow_redirects=False).status_code == 303  # sem login
+        c.post("/entrar", data={"login": "coord", "senha": "senha"})
+        painel = c.get("/painel")
+        assert painel.status_code == 200 and "Novos pacientes" in painel.text
+        assert c.get("/exportar/agendamentos.csv").status_code == 200
     from sqlalchemy import func, select
     from app.db import sessao
     from app.models import Mensagem

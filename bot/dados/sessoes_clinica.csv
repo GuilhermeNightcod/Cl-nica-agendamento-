@@ -1,0 +1,9 @@
+turma;dia_semana;inicio;fim;professor;nome_clinica;especialidades;procedimentos;vagas;idade_min;idade_max
+8º semestre;ter;08:00;12:00;Profª Jhennifer;Clínica Integrada VIII;triagem,endodontia;Anamnese, capeamento pulpar e acesso;10;;
+8º semestre;qua;08:00;12:00;A definir;Hebiatria;hebiatria,endodontia,clinica_geral;Procedimentos de endo e gerais em adolescentes;10;10;19
+8º semestre;qui;08:00;12:00;A definir;Odontopediatria;odontopediatria;Atendimento infantil;10;0;12
+8º semestre;sex;08:00;12:00;A definir;Clínica Geral VIII;cirurgia,clinica_geral,protese;Geralmente cirurgia, geral e prótese quando houver;10;;
+6º semestre;seg;14:00;18:00;EXEMPLO - ajustar;Clínica Integrada VI;triagem,clinica_geral,periodontia;EXEMPLO - ajustar;10;;
+6º semestre;qui;14:00;18:00;EXEMPLO - ajustar;Clínica Integrada VI;clinica_geral,periodontia;EXEMPLO - ajustar;10;;
+10º semestre;ter;14:00;18:00;EXEMPLO - ajustar;Clínica Integrada X;protese,endodontia;EXEMPLO - ajustar;8;;
+10º semestre;sex;14:00;18:00;EXEMPLO - ajustar;Clínica Integrada X;cirurgia,clinica_geral,protese;EXEMPLO - ajustar;8;;

@@ -1,5 +1,6 @@
 """Junta tudo: recebe mensagens, roda o fluxo, envia respostas e aciona o Chatwoot."""
 import logging
+from datetime import timedelta
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -7,7 +8,7 @@ from sqlalchemy.orm import Session
 from . import config
 from .chatwoot import ClienteChatwoot
 from .fluxo import Resultado, fmt_data, fmt_hora, processar, registrar
-from .mensagens import Entrada, Resposta, Texto, resumo
+from .mensagens import Entrada, Modelo, Resposta, Texto, resumo
 from .models import Conversa, Mensagem, Paciente
 from .whatsapp import ClienteWhatsApp
 
@@ -64,7 +65,7 @@ class Servico:
         if prox:
             linhas.append(
                 "Próximos agendamentos: "
-                + "; ".join(f"{a.vaga.especialidade.nome} {fmt_data(a.vaga.inicio)} {fmt_hora(a.vaga.inicio)}" for a in prox)
+                + "; ".join(f"{a.descricao} {fmt_data(a.vaga.inicio)} {fmt_hora(a.vaga.inicio)}" for a in prox)
             )
         linhas.append("\n— Últimas mensagens —")
         for m in reversed(historico):
@@ -74,6 +75,29 @@ class Servico:
             p.conversa.chatwoot_conversa_id = self.chatwoot.abrir_conversa(p, "\n".join(linhas))
         except Exception:
             log.exception("Falha ao abrir conversa no Chatwoot")
+
+    def notificar_agendamento(self, s: Session, ag) -> str:
+        """Avisa o paciente quando a RECEPÇÃO agenda. Retorna o que aconteceu (para mostrar na tela)."""
+        p, v = ag.paciente, ag.vaga
+        if not p.telefone:
+            return "Paciente sem WhatsApp cadastrado: avise por telefone."
+        conv = p.conversa
+        dentro_24h = bool(conv and conv.ultima_msg_paciente_em and config.agora() - conv.ultima_msg_paciente_em < timedelta(hours=23))
+        if dentro_24h:
+            from . import textos as T
+
+            msg = Texto(T.AGENDAMENTO_OK.format(especialidade=ag.descricao, data=fmt_data(v.inicio), hora=fmt_hora(v.inicio)))
+        elif config.TEMPLATE_AGENDAMENTO:
+            msg = Modelo(
+                config.TEMPLATE_AGENDAMENTO,
+                [(p.nome or p.nome_perfil or "paciente").split()[0], ag.descricao, fmt_data(v.inicio), fmt_hora(v.inicio)],
+                texto_resumo=f"Agendamento {ag.descricao} {fmt_data(v.inicio)} {fmt_hora(v.inicio)}",
+            )
+        else:
+            return "Agendado. O paciente receberá o lembrete automático antes da consulta."
+        self.enviar(p.telefone, [msg])
+        registrar(s, p, "saida", resumo(msg))
+        return "Agendado e o paciente foi avisado pelo WhatsApp."
 
     # ---- eventos vindos do Chatwoot -------------------------------------------------
     def evento_chatwoot(self, s: Session, evento: dict) -> None:

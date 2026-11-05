@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block titulo %}{% endblock %} · {{ config.NOME_CLINICA }}</title>
+<style>
+  :root { --azul:#0f5c8c; --azul-claro:#e8f1f8; --cinza:#f3f5f7; --borda:#dde3e8; --texto:#1d2a33; --suave:#5b6b76;
+          --verde:#1b7f4b; --verde-claro:#e3f4ea; --vermelho:#b42318; --vermelho-claro:#fde8e6; --amarelo:#a15c07; --amarelo-claro:#fff3dc; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; color:var(--texto); background:var(--cinza); font-size:15px; }
+  a { color:var(--azul); }
+  header { background:var(--azul); color:#fff; }
+  .topo { display:flex; align-items:center; gap:18px; padding:10px 20px; flex-wrap:wrap; }
+  .topo .marca { font-weight:700; font-size:16px; margin-right:8px; white-space:nowrap; }
+  nav { display:flex; gap:4px; flex-wrap:wrap; flex:1; }
+  nav a { color:#fff; text-decoration:none; padding:7px 11px; border-radius:6px; font-size:14px; }
+  nav a.ativo, nav a:hover { background:rgba(255,255,255,.18); }
+  .quem { font-size:13px; opacity:.9; white-space:nowrap; } .quem a { color:#fff; }
+  main { padding:20px; max-width:1300px; margin:0 auto; }
+  h1 { font-size:22px; margin:0 0 4px; } h2 { font-size:17px; margin:0 0 12px; } h3 { font-size:15px; margin:0 0 8px; }
+  .sub { color:var(--suave); margin:0 0 18px; }
+  .caixa { background:#fff; border:1px solid var(--borda); border-radius:10px; padding:16px; margin-bottom:18px; }
+  .linha { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  .entre { justify-content:space-between; }
+  .grade2 { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  @media (max-width:860px) { .grade2 { grid-template-columns:1fr; } }
+  table { width:100%; border-collapse:collapse; }
+  th, td { text-align:left; padding:8px; border-bottom:1px solid var(--borda); vertical-align:top; }
+  th { font-size:12px; text-transform:uppercase; color:var(--suave); letter-spacing:.02em; }
+  .tabela { overflow-x:auto; }
+  label { display:block; font-size:13px; color:var(--suave); margin-bottom:4px; }
+  input, select, textarea { font:inherit; padding:8px 10px; border:1px solid var(--borda); border-radius:6px; background:#fff; width:100%; }
+  textarea { min-height:70px; }
+  .campos { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin-bottom:12px; }
+  .btn { display:inline-block; font:inherit; font-size:14px; padding:8px 14px; border-radius:6px; border:1px solid var(--azul); background:var(--azul); color:#fff; cursor:pointer; text-decoration:none; white-space:nowrap; }
+  .btn.sec { background:#fff; color:var(--azul); }
+  .btn.peq { font-size:12px; padding:4px 9px; }
+  .btn.perigo { background:#fff; color:var(--vermelho); border-color:var(--vermelho); }
+  form.inline { display:inline; }
+  .tag { display:inline-block; padding:2px 8px; border-radius:99px; font-size:12px; background:var(--cinza); white-space:nowrap; }
+  .agendado { background:var(--amarelo-claro); color:var(--amarelo); }
+  .confirmado, .compareceu { background:var(--verde-claro); color:var(--verde); }
+  .faltou, .bloq { background:var(--vermelho-claro); color:var(--vermelho); }
+  .cancelado { background:var(--cinza); color:var(--suave); text-decoration:line-through; }
+  .aviso { padding:10px 14px; border-radius:8px; margin-bottom:16px; }
+  .aviso.ok { background:var(--verde-claro); color:var(--verde); }
+  .aviso.erro { background:var(--vermelho-claro); color:var(--vermelho); }
+  .vazio { color:var(--suave); }
+  small, .suave { color:var(--suave); }
+  .check { display:flex; gap:6px; align-items:center; font-size:14px; color:var(--texto); }
+  .check input { width:auto; }
+</style>
+{% block cabeca %}{% endblock %}
+</head>
+<body>
+{% if usuario %}
+<header><div class="topo">
+  <span class="marca">🦷 {{ config.NOME_CLINICA }}</span>
+  <nav>
+    {% set atual = request.url.path %}
+    <a href="/agenda" class="{{ 'ativo' if atual == '/agenda' or atual.startswith('/agenda/') }}">Agenda</a>
+    <a href="/agendar" class="{{ 'ativo' if atual.startswith('/agendar') }}">Agendar</a>
+    <a href="/pacientes" class="{{ 'ativo' if atual.startswith('/pacientes') }}">Pacientes</a>
+    <a href="/espera" class="{{ 'ativo' if atual.startswith('/espera') }}">Lista de espera</a>
+    <a href="/painel" class="{{ 'ativo' if atual.startswith('/painel') }}">Indicadores</a>
+    {% if usuario.papel == 'coordenacao' %}
+    <a href="/clinicas" class="{{ 'ativo' if atual.startswith('/clinicas') }}">Clínicas</a>
+    <a href="/acessos" class="{{ 'ativo' if atual.startswith('/acessos') }}">Acessos</a>
+    {% endif %}
+  </nav>
+  <span class="quem">{{ usuario.login }} · <a href="/sair">sair</a></span>
+</div></header>
+{% endif %}
+<main>
+  {% if msg %}<div class="aviso ok">{{ msg }}</div>{% endif %}
+  {% if erro %}<div class="aviso erro">{{ erro }}</div>{% endif %}
+  {% block conteudo %}{% endblock %}
+</main>
+</body>
+</html>

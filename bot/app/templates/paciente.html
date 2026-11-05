@@ -1,0 +1,84 @@
+{% extends "base.html" %}{% block titulo %}{{ p.nome_exibicao }}{% endblock %}
+{% block cabeca %}<style>
+  .docs { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:12px; }
+  .doc { border:1px solid var(--borda); border-radius:8px; overflow:hidden; background:#fff; font-size:13px; }
+  .doc .miniatura { display:block; height:150px; background:var(--cinza); display:flex; align-items:center; justify-content:center; overflow:hidden; }
+  .doc .miniatura img { width:100%; height:100%; object-fit:cover; }
+  .doc .miniatura .pdf { font-size:40px; }
+  .doc .info { padding:8px; }
+  .envio { border:2px dashed var(--borda); border-radius:10px; padding:14px; background:var(--cinza); }
+</style>{% endblock %}
+{% block conteudo %}
+<p><a href="/pacientes">← pacientes</a></p>
+<div class="linha entre" style="margin-bottom:14px">
+  <div>
+    <h1>{{ p.nome_exibicao }}</h1>
+    <p class="sub" style="margin:0">
+      {% if p.idade() is not none %}{{ p.idade() }} anos · {% endif %}
+      {% if p.telefone %}{{ p.telefone|fone }} · {% endif %}
+      {% if p.numero_prontuario %}Prontuário físico nº <b>{{ p.numero_prontuario }}</b> · {% endif %}
+      ficha {{ p.id }}{% if p.aceitou_privacidade_em %} · aceitou o aviso LGPD em {{ p.aceitou_privacidade_em.strftime('%d/%m/%Y') }}{% endif %}
+    </p>
+  </div>
+  <a class="btn" href="/agendar?paciente_id={{ p.id }}">Agendar</a>
+</div>
+
+<div class="grade2">
+  <div class="caixa">
+    <h2>Dados do paciente</h2>
+    <form method="post" action="/pacientes/{{ p.id }}">{% include "_campos_paciente.html" %}<button class="btn">Salvar alterações</button></form>
+  </div>
+  <div class="caixa tabela">
+    <h2>Consultas</h2>
+    {% if espera %}<p>⏳ Na lista de espera: {% for e in espera %}<span class="tag">{{ e.especialidade.nome }}</span> {% endfor %}</p>{% endif %}
+    <table>
+      {% for a in ags %}
+      <tr>
+        <td style="white-space:nowrap"><a href="/agenda/vaga/{{ a.vaga.id }}">{{ a.vaga.inicio.strftime('%d/%m/%Y') }}</a><br><small>{{ a.vaga.inicio.strftime('%H:%M') }} · {{ a.vaga.sessao.turma }}</small></td>
+        <td>{{ a.descricao }}{% if a.aluno %}<br><small>aluno: {{ a.aluno }}</small>{% endif %}{% if a.observacao %}<br><small>{{ a.observacao }}</small>{% endif %}</td>
+        <td><span class="tag {{ a.status }}">{{ a.status }}</span></td>
+      </tr>
+      {% else %}<tr><td class="vazio">Nenhuma consulta ainda.</td></tr>{% endfor %}
+    </table>
+  </div>
+</div>
+
+<div class="caixa">
+  <div class="linha entre"><h2>📁 Prontuário digitalizado</h2><span class="suave">{{ p.documentos|length }} documento(s)</span></div>
+  <form class="envio" method="post" action="/pacientes/{{ p.id }}/documentos" enctype="multipart/form-data" style="margin-bottom:16px">
+    <div class="campos">
+      <div><label>Fotos ou PDF (pode escolher vários)</label>
+        <input type="file" name="arquivos" accept="image/jpeg,image/png,application/pdf" multiple required></div>
+      <div><label>Tipo de documento</label><select name="tipo">{% for v, r in tipos %}<option value="{{ v }}">{{ r }}</option>{% endfor %}</select></div>
+      <div><label>Data do documento</label><input type="date" name="data_documento" value="{{ hoje }}"></div>
+      <div><label>Descrição (opcional)</label><input name="descricao" placeholder="ex.: folhas 1 a 3"></div>
+    </div>
+    <div class="linha entre">
+      <small>📱 No celular, o botão de arquivo abre a câmera: fotografe cada folha do prontuário físico. JPG, PNG ou PDF até {{ config.TAMANHO_MAX_ARQUIVO_MB }} MB.</small>
+      <button class="btn">Anexar ao prontuário</button>
+    </div>
+  </form>
+  {% if p.documentos %}
+  <div class="docs">
+    {% for d in p.documentos %}
+    <div class="doc">
+      <a class="miniatura" href="/documentos/{{ d.id }}" target="_blank">
+        {% if d.eh_imagem %}<img src="/documentos/{{ d.id }}" alt="{{ d.nome_original }}" loading="lazy">{% else %}<span class="pdf">📄</span>{% endif %}
+      </a>
+      <div class="info">
+        <b>{{ tipos_dict.get(d.tipo, d.tipo) }}</b><br>
+        <small>{{ d.data_documento.strftime('%d/%m/%Y') if d.data_documento }}{% if d.descricao %} · {{ d.descricao }}{% endif %}</small><br>
+        <small>por {{ d.enviado_por }}</small>
+        <div class="linha" style="gap:6px;margin-top:6px">
+          <a class="btn sec peq" href="/documentos/{{ d.id }}?baixar=1">Baixar</a>
+          {% if usuario.papel == 'coordenacao' %}
+          <form class="inline" method="post" action="/documentos/{{ d.id }}/excluir" onsubmit="return confirm('Excluir este documento do prontuário?')"><button class="btn perigo peq">Excluir</button></form>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}<p class="vazio">Nenhum documento anexado ainda.</p>{% endif %}
+</div>
+{% endblock %}

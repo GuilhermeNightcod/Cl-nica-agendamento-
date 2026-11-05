@@ -1,77 +1,98 @@
 # 🦷 Central Inteligente de Atendimento Odontológico
 
-Atendimento automático pelo **WhatsApp (API oficial da Meta)**, agenda centralizada,
-lembretes, recuperação de pacientes, atendimento humano e painel para a coordenação,
-feito para **clínicas-escola de Odontologia**.
+Sistema da **clínica-escola de Odontologia**: agenda por **turma, dia de clínica, professor e
+procedimento**, cadastro de pacientes com **prontuário físico digitalizado**, e atendimento
+automático pelo **WhatsApp (API oficial da Meta)** com lembretes para não perder pacientes.
 
 > Este README foi escrito para quem **não programa**. A parte técnica para o
 > programador está em [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md).
 
 ---
 
-## O que já funciona
+## Como o sistema pensa a clínica
 
-| Função | Como funciona |
-|---|---|
-| **Resposta imediata** | O bot responde na hora com boas-vindas e menu |
-| **Aviso de privacidade (LGPD)** | O paciente precisa concordar antes de informar dados |
-| **Cadastro** | Pergunta nome, data de nascimento e motivo da consulta |
-| **Agendamento** | Paciente escolhe especialidade → turno → horário livre → confirma |
-| **Lista de espera** | Se não houver vaga, oferece entrar na lista |
-| **Meus agendamentos** | Paciente vê e cancela as próprias consultas (a vaga é liberada) |
-| **Urgência** | Palavras como "inchaço", "sangramento" e "muita dor" chamam um humano na hora |
-| **Atendimento humano** | O paciente vai para o **Chatwoot**, onde a recepção responde |
-| **Lembrete** | Mensagem automática 24h antes, com botões **Confirmo** / **Remarcar** |
-| **Recuperação** | Quem parou no meio do agendamento recebe um "quer continuar?" |
-| **Painel** | Indicadores, próximos agendamentos, faltas, lista de espera e pendentes |
-| **Exportar para Excel** | Botão no painel baixa todos os agendamentos |
+```
+TURMA (6º, 8º, 10º semestre)
+  └─ CLÍNICA = um horário fixo da semana
+       ex.: 8º semestre · Terça 08:00–12:00 · Profª Jhennifer
+            Áreas: Triagem/Anamnese + Endodontia
+            Procedimentos: anamnese, capeamento pulpar e acesso
+            10 pacientes por dia · qualquer idade
+       └─ o sistema gera TODAS AS DATAS do semestre (pula feriados)
+            └─ AGENDAMENTOS (pela recepção ou pelo WhatsApp)
+                 → lembrete automático → Veio / Faltou
+PACIENTE → ficha + nº do prontuário físico + fotos/PDF das folhas do prontuário
+```
+
+Cada clínica pode ter **faixa etária**: Hebiatria só aceita adolescentes (10 a 19 anos) e
+Odontopediatria só aceita crianças (até 12 anos). O sistema e o bot só oferecem a clínica certa para a idade do paciente.
 
 ---
 
-## Como as peças se conectam
+## Telas (abra no navegador: `http://endereço-do-servidor:8000`)
 
-```
- Paciente no WhatsApp
-        │
-        ▼
- Meta (WhatsApp Cloud API oficial)
-        │  webhook
-        ▼
- ┌───────────────────────┐       ┌──────────────────────────┐
- │  BOT  (pasta bot/)    │◄─────►│  CHATWOOT                │
- │  fluxo da conversa    │       │  recepção responde aqui  │
- │  agenda e vagas       │       └──────────────────────────┘
- │  lembretes            │
- │  painel /painel       │──► PostgreSQL (banco de dados)
- └───────────────────────┘
-```
+| Tela | Para quem | O que faz |
+|---|---|---|
+| **Agenda** | Recepção | Semana com todas as clínicas das turmas, ocupação e pacientes. Clique num dia para ver a lista, marcar **Veio/Faltou**, anotar o **aluno**, fazer **encaixe** ou **bloquear o dia** (professor ausente, prova...) |
+| **Agendar** | Recepção | Escolha o paciente e o procedimento: o sistema mostra **só as clínicas que fazem esse procedimento**, com vaga e na idade certa |
+| **Pacientes** | Recepção | Busca por nome, telefone, CPF ou **nº do prontuário físico**. A ficha tem os dados, o histórico de consultas e o **prontuário digitalizado** |
+| **Lista de espera** | Recepção | Quem não encontrou vaga, com botão para agendar quando abrir |
+| **Indicadores** | Coordenação | Novos pacientes, % que agendou, faltas, ocupação de cada clínica, pacientes de dias bloqueados para remarcar, conversas abandonadas no WhatsApp |
+| **Clínicas** | Coordenação | Cadastrar e editar os dias de clínica de cada turma. Ao salvar, a agenda do semestre é refeita |
+| **Acessos** | Coordenação | Quem abriu fichas, viu documentos ou mudou dados (LGPD) |
 
-Todos os programas usados são de **código aberto**:
+### Prontuário digitalizado 📁
+Na ficha do paciente, clique em **"Escolher arquivos"**. **No celular, isso abre a câmera:** fotografe
+cada folha do prontuário físico, escolha o tipo (anamnese, odontograma, radiografia, termo...) e anexe.
+Aceita JPG, PNG e PDF.
+
+> ⚠️ **Valor legal:** a lei (Lei 13.787/2018) só permite **descartar o papel** se a digitalização
+> seguir regras próprias, com certificado digital ICP-Brasil. Por enquanto trate as fotos como **cópia de
+> consulta** e **guarde o prontuário físico**. Confirme com a coordenação e o jurídico da faculdade.
+
+### WhatsApp 💬
+| Função | Como funciona |
+|---|---|
+| Resposta imediata + aviso LGPD | Boas-vindas e menu; o paciente concorda antes de informar dados |
+| Agendamento | Nome → nascimento → motivo → área → turno → horário (só clínicas da idade do paciente) |
+| Urgência | "rosto inchado", "dor muito forte", "não para de sangrar"... chamam um humano |
+| Atendimento humano | A conversa vai para o **Chatwoot**, onde a recepção responde |
+| Lembrete | 24h antes, com botões **Confirmo** / **Remarcar** |
+| Recuperação | Quem parou no meio do agendamento recebe um "quer continuar?" |
+| Agendado pela recepção | O paciente pode ser avisado pelo WhatsApp (caixa "Avisar o paciente") |
+
+---
+
+## O que dá para mudar sem programar ✏️
+
+| Quero mudar... | Onde |
+|---|---|
+| **Dias de clínica, professores, áreas, vagas e idades** | Tela **Clínicas** (coordenação) |
+| **Feriados e recessos** | `bot/dados/feriados.csv`, depois **Clínicas → Atualizar agenda do semestre** |
+| **Lista de procedimentos** | `bot/dados/procedimentos.csv` (área;procedimento) |
+| **Áreas (especialidades)** | `bot/dados/especialidades.csv` (`mostrar_no_bot` = sim/nao) |
+| **Mensagens do bot e palavras de urgência** | `bot/app/textos.py`, depois `docker compose restart bot` |
+| **Datas do semestre, usuários e senhas** | arquivo `.env` |
+
+A grade inicial das turmas vem de `bot/dados/sessoes_clinica.csv` e só é importada **na primeira vez**.
+Depois disso, use a tela **Clínicas**.
+
+> ⚠️ A grade de exemplo tem o **8º semestre** conforme informado. Os horários (08:00–12:00), os professores
+> "A definir" e as turmas do **6º e 10º** (marcadas "EXEMPLO - ajustar") **precisam ser corrigidos**.
+
+> 💡 Ao salvar um CSV no Excel, escolha **"CSV UTF-8"** para os acentos não quebrarem.
+
+---
+
+## Programas usados (todos de código aberto)
 
 | Programa | Para quê | Licença |
 |---|---|---|
-| Python + FastAPI | o bot e o painel | MIT/BSD ✅ |
+| Python + FastAPI | sistema da clínica e bot | MIT/BSD ✅ |
 | PostgreSQL | banco de dados | PostgreSQL (livre) ✅ |
-| Chatwoot (edição *Community*) | caixa de atendimento humano | MIT ✅ |
+| Chatwoot (edição *Community*) | caixa de atendimento humano do WhatsApp | MIT ✅ |
 | Redis | fila interna do Chatwoot | BSD/RSAL (uso interno ok) ✅ |
 | Cloudflared | endereço público temporário para testes | Apache 2.0 ✅ |
-
----
-
-## Mudar o bot sem programar ✏️
-
-| Quero mudar... | Arquivo | Como |
-|---|---|---|
-| **As mensagens do bot** | `bot/app/textos.py` | Edite o texto entre aspas. Não apague `{nome}`, `{clinica}` etc. |
-| **As especialidades** | `bot/dados/especialidades.csv` | Abre no Excel. Coluna `ativa` = sim/nao |
-| **Dias, horários e vagas** | `bot/dados/grade_horarios.csv` | Uma linha por horário: especialidade; dia (seg, ter...); hora; vagas |
-| **Feriados** | `bot/dados/feriados.csv` | Data e descrição. Nesses dias não abre vaga |
-| **Datas do semestre, senhas** | `.env` | Veja o passo 2 |
-
-Depois de mudar as planilhas, clique em **"Recarregar agenda"** no painel.
-Depois de mudar `textos.py`, reinicie o bot com `docker compose restart bot`.
-
-> 💡 Ao salvar o CSV no Excel, escolha **"CSV UTF-8 (separado por vírgulas)"** para os acentos não quebrarem.
 
 ---
 
@@ -96,13 +117,14 @@ Digite `oi` e responda com os **números** das opções. Comandos: `/reset` (com
 cp .env.example .env
 ```
 Abra o `.env` e preencha pelo menos: `POSTGRES_PASSWORD`, `CHATWOOT_SECRET_KEY_BASE`,
-`PAINEL_SENHA`, `SEMESTRE_INICIO` e `SEMESTRE_FIM`.
+`CHAVE_SESSAO`, `USUARIOS` (um login para cada pessoa da recepção e da coordenação),
+`SEMESTRE_INICIO` e `SEMESTRE_FIM`.
 
 ### Passo 3: subir tudo
 ```bash
 docker compose up -d
 ```
-- Painel do bot: <http://localhost:8000/painel> (usuário e senha do `.env`)
+- Sistema da clínica: <http://localhost:8000> (usuários e senhas do `.env`)
 - Chatwoot: <http://localhost:3000> (na primeira vez ele pede para criar o usuário administrador; demora cerca de 1 minuto para abrir)
 
 ### Passo 4: ligar o Chatwoot ao bot
@@ -156,14 +178,17 @@ Depois que for aprovado, o bot passa a enviá-lo sozinho.
 
 ---
 
-## Painel da coordenação
+## Backup ⚠️
 
-Endereço: `/painel`. Mostra:
-- novos contatos, agendamentos, **% de contatos que agendaram** e **taxa de faltas**;
-- próximos agendamentos, com botões **Compareceu**, **Faltou** e **Cancelar** (a recepção marca no dia);
-- ocupação das vagas por especialidade nas próximas 4 semanas;
-- lista de espera;
-- quem está aguardando atendente e quem abandonou o agendamento.
+O banco de dados e as fotos do prontuário ficam em "volumes" do Docker (`postgres_dados` e `prontuarios`).
+**Se o servidor quebrar sem backup, tudo é perdido.** Antes de usar com pacientes reais, configure
+um backup diário (o programador pode automatizar):
+```bash
+docker compose exec postgres pg_dump -U postgres odonto > backup_$(date +%F).sql
+```
+```bash
+docker run --rm -v central-odonto_prontuarios:/dados -v "$PWD":/destino alpine tar czf /destino/prontuarios_$(date +%F).tgz -C /dados .
+```
 
 ---
 
@@ -188,9 +213,11 @@ Endereço: `/painel`. Mostra:
 
 ## Próximos passos sugeridos
 
-- [ ] Painel para a recepção **editar vagas** sem mexer em planilha
+- [ ] Corrigir a grade das turmas (horários, professores, 6º e 10º) na tela **Clínicas**
 - [ ] Avisar automaticamente quem está na **lista de espera** quando abrir vaga
-- [ ] Ligar a **triagem** às disciplinas e turmas do semestre
-- [ ] IA para entender mensagens livres ("meu dente quebrou" → especialidade certa)
-- [ ] Login individual por funcionário no painel e registro de acessos (LGPD)
-- [ ] Hospedagem em servidor com domínio e HTTPS + backup diário do banco
+- [ ] Avisar pelo WhatsApp os pacientes de um **dia bloqueado** e oferecer remarcação
+- [ ] Vincular o paciente a um **aluno fixo** durante o tratamento (plano de tratamento por etapas)
+- [ ] Dar acesso aos **professores** para ver a lista do dia deles
+- [ ] IA para entender mensagens livres ("meu dente quebrou" → área certa)
+- [ ] Hospedagem em servidor com domínio, HTTPS e backup automático
+- [ ] Para vender a outras clínicas: separar os dados por clínica (multi-clínica)

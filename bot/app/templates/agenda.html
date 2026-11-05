@@ -1,0 +1,51 @@
+{% extends "base.html" %}{% block titulo %}Agenda{% endblock %}
+{% block cabeca %}<style>
+  .semana { display:grid; grid-template-columns:repeat(6,minmax(170px,1fr)); gap:10px; overflow-x:auto; }
+  @media (max-width:900px) { .semana { grid-template-columns:1fr; } }
+  .dia { background:#fff; border:1px solid var(--borda); border-radius:10px; padding:10px; min-height:160px; }
+  .dia.hoje { border:2px solid var(--azul); }
+  .dia h3 { display:flex; justify-content:space-between; font-size:14px; }
+  .sessao { display:block; text-decoration:none; color:inherit; border:1px solid var(--borda); border-left:4px solid var(--azul); border-radius:8px; padding:8px; margin-bottom:8px; background:var(--azul-claro); }
+  .sessao:hover { border-color:var(--azul); }
+  .sessao.cheia { border-left-color:var(--amarelo); background:var(--amarelo-claro); }
+  .sessao.bloqueada { border-left-color:var(--vermelho); background:var(--vermelho-claro); }
+  .sessao .t { font-weight:600; font-size:13px; }
+  .sessao .i { font-size:12px; color:var(--suave); }
+  .sessao ul { margin:6px 0 0; padding-left:16px; font-size:12px; }
+  .barra { height:6px; background:#fff; border-radius:3px; margin-top:6px; } .barra span { display:block; height:100%; background:var(--azul); border-radius:3px; }
+</style>{% endblock %}
+{% block conteudo %}
+<div class="linha entre" style="margin-bottom:14px">
+  <div><h1>Agenda da semana</h1><p class="sub" style="margin:0">{{ seg.strftime('%d/%m') }} a {{ (seg + timedelta(days=5)).strftime('%d/%m/%Y') }}</p></div>
+  <form class="linha" method="get">
+    <a class="btn sec" href="?semana={{ anterior }}&turma={{ turma }}">◀</a>
+    <a class="btn sec" href="?turma={{ turma }}">Hoje</a>
+    <a class="btn sec" href="?semana={{ proxima }}&turma={{ turma }}">▶</a>
+    <input type="hidden" name="semana" value="{{ seg }}">
+    <select name="turma" onchange="this.form.submit()" style="width:auto">
+      <option value="">Todas as turmas</option>
+      {% for t in turmas %}<option {{ 'selected' if t == turma }}>{{ t }}</option>{% endfor %}
+    </select>
+    <a class="btn" href="/agendar">+ Agendar paciente</a>
+  </form>
+</div>
+<div class="semana">
+{% for d, vagas in dias %}
+  <div class="dia {{ 'hoje' if d == hoje }}">
+    <h3><span>{{ DIAS_SEMANA[d.weekday()] }}</span><span class="suave">{{ d.strftime('%d/%m') }}</span></h3>
+    {% for v in vagas %}
+      {% set ativos = v.ativos %}
+      <a class="sessao {{ 'bloqueada' if v.bloqueada else ('cheia' if v.livres == 0) }}" href="/agenda/vaga/{{ v.id }}">
+        <div class="t">{{ v.inicio.strftime('%H:%M') }}–{{ v.fim.strftime('%H:%M') }} · {{ v.sessao.turma }}</div>
+        <div class="i">{{ v.sessao.nome or v.sessao.areas }}{% if v.sessao.professor %} · {{ v.sessao.professor }}{% endif %}</div>
+        <div class="i">{{ v.sessao.areas }}</div>
+        {% if v.bloqueada %}<div class="i"><b>⛔ {{ v.motivo_bloqueio }}</b></div>{% endif %}
+        <div class="i" style="margin-top:4px"><b>{{ ativos|length }}/{{ v.capacidade }}</b> pacientes</div>
+        <div class="barra"><span style="width:{{ [100, (100 * ativos|length / v.capacidade)|round|int]|min if v.capacidade else 0 }}%"></span></div>
+        {% if ativos %}<ul>{% for a in ativos[:6] %}<li>{{ a.paciente.nome_exibicao.split()[0] }} — {{ a.descricao }}</li>{% endfor %}{% if ativos|length > 6 %}<li>+{{ ativos|length - 6 }}…</li>{% endif %}</ul>{% endif %}
+      </a>
+    {% else %}<p class="vazio" style="font-size:13px">Sem clínica</p>{% endfor %}
+  </div>
+{% endfor %}
+</div>
+{% endblock %}

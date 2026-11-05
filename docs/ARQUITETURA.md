@@ -7,10 +7,14 @@
 - **Atendimento humano**: Chatwoot CE, com uma caixa de entrada do tipo **API**. O bot é dono do
   número do WhatsApp e "espelha" a conversa no Chatwoot só durante o atendimento humano.
 - **Rotinas**: loop asyncio dentro do processo (`app/tarefas.py`), executado a cada `INTERVALO_TAREFAS_MIN`.
+- **Sistema da clínica**: telas server-side (Jinja2) em `app/web/rotas.py`, login por cookie de sessão
+  (Starlette `SessionMiddleware`), usuários e papéis vindos de `USUARIOS` no `.env`.
 
 ```
 app/
-  main.py        rotas HTTP: /webhook (Meta), /chatwoot/webhook, /painel, /saude
+  main.py        app FastAPI, webhooks (/webhook Meta, /chatwoot/webhook), /saude
+  web/rotas.py   telas: agenda, agendar, pacientes + prontuário, espera, painel, clínicas, acessos
+  agenda.py      regras da agenda (gerar datas, vagas disponíveis, agendar, cancelar) — usada pelo bot e pela web
   fila.py        filas por paciente (hash do telefone -> thread): ordem garantida por paciente
   servico.py     orquestra: fluxo -> envio WhatsApp -> Chatwoot
   fluxo.py       máquina de estados da conversa (função pura sobre a Session)
@@ -19,9 +23,29 @@ app/
   whatsapp.py    payloads da Cloud API, verificação HMAC, parsing do webhook
   chatwoot.py    cliente da API do Chatwoot (contatos, conversas, mensagens)
   tarefas.py     lembretes (template) e recuperação (dentro da janela de 24h)
-  dados.py       importa CSVs -> especialidades e vagas do semestre (idempotente)
-  models.py      Paciente, Conversa, Especialidade, Vaga, Agendamento, ListaEspera, Mensagem
+  dados.py       importa CSVs (especialidades, procedimentos, grade inicial, feriados) e gera as vagas
+  models.py      tabelas (ver abaixo)
+  templates/     HTML das telas
 ```
+
+## Modelo de dados
+
+```
+Especialidade 1─N Procedimento
+SessaoClinica N─N Especialidade        (turma, dia_semana, hora_inicio/fim, professor, vagas, idade_min/max)
+SessaoClinica 1─N Vaga                 (uma data concreta; capacidade, ocupadas, bloqueada)
+Vaga          1─N Agendamento N─1 Paciente   (especialidade, procedimento, aluno, origem bot|recepcao, status)
+Paciente      1─N Documento            (prontuário digitalizado: arquivo no disco em ARQUIVOS_DIR)
+Paciente      1─1 Conversa             (estado do bot)
+RegistroAcesso                         (LGPD: usuário, ação, paciente, quando)
+```
+
+- `gerar_vagas` é idempotente: cria as datas que faltam, atualiza horário e capacidade, apaga datas
+  futuras sem agendamentos e **bloqueia** (nunca apaga) datas com agendamentos que deixaram de existir.
+  Esses pacientes aparecem em Indicadores → "remarcar".
+- A grade de `sessoes_clinica.csv` só é importada com a tabela vazia. Depois a fonte da verdade é a tela Clínicas.
+- Upload: o tipo do arquivo é validado pelos primeiros bytes (JPG/PNG/PDF), não pela extensão. Os arquivos
+  recebem nome aleatório e só são servidos por rota autenticada, com registro de acesso.
 
 ## Decisões e por quê
 
@@ -66,6 +90,10 @@ deduplicação, ordem) e os limites de tamanho do WhatsApp.
 ## Dívidas técnicas / próximos passos
 
 - **Migrações**: hoje usa `create_all`. Adotar **Alembic** antes de ir para produção.
+- **Senhas**: hoje ficam em texto no `.env`. Para produção, criar uma tabela de usuários com hash (argon2/bcrypt),
+  troca de senha e bloqueio após tentativas.
+- **Armazenamento**: arquivos no disco local. Para várias máquinas ou backup fácil, usar S3/MinIO com criptografia.
+- **Prontuário com valor legal**: assinatura ICP-Brasil (Lei 13.787/2018) se a faculdade quiser descartar o papel.
 - **Vários processos**: a fila é por processo. Para escalar horizontalmente, usar Redis/RQ
   com particionamento por telefone, ou `SELECT ... FOR UPDATE` no paciente.
 - **Token da Meta**: usar token de usuário do sistema e guardar em um gerenciador de segredos.

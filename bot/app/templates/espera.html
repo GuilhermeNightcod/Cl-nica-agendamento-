@@ -1,0 +1,26 @@
+{% extends "base.html" %}{% block titulo %}Lista de espera{% endblock %}
+{% block conteudo %}
+<div class="linha entre" style="margin-bottom:14px">
+  <div><h1>Lista de espera</h1><p class="sub" style="margin:0">Pacientes que pediram atendimento e não encontraram vaga.</p></div>
+  <form method="get"><select name="area" onchange="this.form.submit()" style="width:auto">
+    <option value="">Todas as áreas</option>
+    {% for a in areas %}<option value="{{ a.id }}" {{ 'selected' if area == a.id|string }}>{{ a.nome }}</option>{% endfor %}
+  </select></form>
+</div>
+<div class="caixa tabela">
+  <table>
+    <tr><th>Desde</th><th>Paciente</th><th>Área</th><th>Turno</th><th>Motivo</th><th></th></tr>
+    {% for e in itens %}
+    <tr>
+      <td>{{ e.criado_em.strftime('%d/%m/%Y') }}</td>
+      <td><a href="/pacientes/{{ e.paciente.id }}"><b>{{ e.paciente.nome_exibicao }}</b></a><br><small>{% if e.paciente.telefone %}{{ e.paciente.telefone|fone }}{% endif %}</small></td>
+      <td>{{ e.especialidade.nome }}</td><td>{{ e.turno or '—' }}</td><td>{{ e.queixa or '' }}</td>
+      <td style="white-space:nowrap;text-align:right">
+        <a class="btn peq" href="/agendar?paciente_id={{ e.paciente.id }}&procedimento=esp:{{ e.especialidade_id }}&espera_id={{ e.id }}">Agendar</a>
+        <form class="inline" method="post" action="/espera/{{ e.id }}/resolver"><button class="btn sec peq">Remover</button></form>
+      </td>
+    </tr>
+    {% else %}<tr><td colspan="6" class="vazio">Ninguém na lista de espera.</td></tr>{% endfor %}
+  </table>
+</div>
+{% endblock %}

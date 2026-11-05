@@ -25,19 +25,23 @@ def enviar_lembretes(s, servico) -> int:
         .where(
             Agendamento.status == "agendado",
             Agendamento.lembrete_enviado_em.is_(None),
+            Vaga.bloqueada.is_(False),
             Vaga.inicio > agora,
             Vaga.inicio <= limite,
         )
     ).all()
     for ag in ags:
         p, v = ag.paciente, ag.vaga
+        if not p.telefone:  # paciente sem WhatsApp: a recepção liga
+            ag.lembrete_enviado_em = agora
+            continue
         # Template na Meta (exemplo):
         #   "Olá {{1}}! Lembrete da sua consulta de {{2}} na clínica-escola:
         #    {{3}} às {{4}}. Você confirma presença?"   [Confirmo] [Remarcar]
         msg = Modelo(
             config.TEMPLATE_LEMBRETE,
-            [primeiro_nome(p) or "paciente", v.especialidade.nome, fmt_data(v.inicio), fmt_hora(v.inicio)],
-            texto_resumo=f"Lembrete {v.especialidade.nome} {fmt_data(v.inicio)} {fmt_hora(v.inicio)}",
+            [primeiro_nome(p) or "paciente", ag.descricao, fmt_data(v.inicio), fmt_hora(v.inicio)],
+            texto_resumo=f"Lembrete {ag.descricao} {fmt_data(v.inicio)} {fmt_hora(v.inicio)}",
             payloads_botoes=[f"confirma:{ag.id}", f"remarca:{ag.id}"],
         )
         servico.enviar(p.telefone, [msg])

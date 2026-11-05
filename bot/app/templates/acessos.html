@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% block titulo %}Registro de acessos{% endblock %}
+{% block conteudo %}
+<h1>Registro de acessos</h1>
+<p class="sub">Quem abriu fichas, viu documentos ou alterou dados (exigência da LGPD para dados de saúde). Últimos 300 registros.</p>
+<div class="caixa tabela"><table>
+  <tr><th>Quando</th><th>Usuário</th><th>Ação</th><th>Paciente</th><th>Detalhe</th></tr>
+  {% for r in regs %}
+  <tr><td style="white-space:nowrap">{{ r.criado_em.strftime('%d/%m/%Y %H:%M') }}</td><td>{{ r.usuario }}</td><td>{{ r.acao }}</td>
+    <td>{% if r.paciente_id %}<a href="/pacientes/{{ r.paciente_id }}">{{ nomes.get(r.paciente_id, r.paciente_id) }}</a>{% endif %}</td><td><small>{{ r.detalhe or '' }}</small></td></tr>
+  {% else %}<tr><td class="vazio">Sem registros.</td></tr>{% endfor %}
+</table></div>
+{% endblock %}

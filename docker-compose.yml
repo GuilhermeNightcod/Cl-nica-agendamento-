@@ -1,7 +1,7 @@
 # Central Inteligente de Atendimento Odontológico
 # Sobe tudo com:   docker compose up -d
 #
-#  bot        -> nosso sistema (WhatsApp + fluxo + agenda + painel)   http://localhost:8000/painel
+#  bot        -> sistema da clínica (agenda, pacientes, prontuário, WhatsApp)   http://localhost:8000
 #  chatwoot   -> caixa de atendimento humano (código aberto, MIT)      http://localhost:3000
 #  postgres   -> banco de dados (um banco para o bot, outro para o Chatwoot)
 #  redis      -> fila interna do Chatwoot
@@ -51,8 +51,10 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg://postgres:${POSTGRES_PASSWORD}@postgres:5432/odonto
       CHATWOOT_URL: http://chatwoot:3000
+      ARQUIVOS_DIR: /app/arquivos
     volumes:
-      - ./bot/dados:/app/dados   # planilhas de especialidades/horários editáveis
+      - ./bot/dados:/app/dados          # planilhas iniciais (especialidades, procedimentos, clínicas, feriados)
+      - prontuarios:/app/arquivos       # prontuários digitalizados — FAÇA BACKUP!
     ports:
       - "8000:8000"
     depends_on:
@@ -96,6 +98,7 @@ services:
       - bot
 
 volumes:
+  prontuarios:
   postgres_dados:
   redis_dados:
   chatwoot_arquivos:

@@ -1,0 +1,9 @@
+{% extends "base.html" %}{% block titulo %}Novo paciente{% endblock %}
+{% block conteudo %}
+<p><a href="/pacientes">← pacientes</a></p>
+<div class="caixa">
+  <h1>Novo paciente</h1>
+  <p class="sub">Depois de salvar você pode anexar o prontuário digitalizado e agendar.</p>
+  <form method="post" action="/pacientes/novo">{% include "_campos_paciente.html" %}<button class="btn">Salvar</button></form>
+</div>
+{% endblock %}

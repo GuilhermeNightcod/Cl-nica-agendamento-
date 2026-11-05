@@ -1,0 +1,8 @@
+<div class="campos">
+  <div><label>Nome completo *</label><input name="nome" value="{{ p.nome if p and p.nome else (p.nome_perfil if p else '') or '' }}" required></div>
+  <div><label>WhatsApp (com DDD)</label><input name="telefone" value="{{ p.telefone|fone if p and p.telefone else '' }}" placeholder="(11) 98888-7777"></div>
+  <div><label>Data de nascimento</label><input type="date" name="nascimento" value="{{ p.data_nascimento if p and p.data_nascimento else '' }}"></div>
+  <div><label>CPF</label><input name="cpf" value="{{ p.cpf if p and p.cpf else '' }}"></div>
+  <div><label>Nº do prontuário físico</label><input name="numero_prontuario" value="{{ p.numero_prontuario if p and p.numero_prontuario else '' }}" placeholder="número da pasta"></div>
+</div>
+<div style="margin-bottom:12px"><label>Observações (alergias, necessidades, contato alternativo)</label><textarea name="observacoes">{{ p.observacoes if p and p.observacoes else '' }}</textarea></div>

@@ -29,6 +29,8 @@ WHATSAPP_API_VERSION = _env("WHATSAPP_API_VERSION", "v23.0")
 # Modelo de mensagem (template) aprovado na Meta para o lembrete.
 TEMPLATE_LEMBRETE = _env("TEMPLATE_LEMBRETE", "lembrete_consulta")
 TEMPLATE_IDIOMA = _env("TEMPLATE_IDIOMA", "pt_BR")
+# Template opcional enviado quando a RECEPÇÃO agenda (fora da janela de 24h). Vazio = não envia.
+TEMPLATE_AGENDAMENTO = _env("TEMPLATE_AGENDAMENTO")
 
 # --- Rotinas automáticas ---------------------------------------------------
 LEMBRETE_HORAS_ANTES = int(_env("LEMBRETE_HORAS_ANTES", "24"))
@@ -42,9 +44,23 @@ CHATWOOT_ACCOUNT_ID = _env("CHATWOOT_ACCOUNT_ID", "1")
 CHATWOOT_INBOX_ID = _env("CHATWOOT_INBOX_ID")
 CHATWOOT_WEBHOOK_TOKEN = _env("CHATWOOT_WEBHOOK_TOKEN", "troque-este-token")
 
-# --- Painel ----------------------------------------------------------------
-PAINEL_USUARIO = _env("PAINEL_USUARIO", "coordenacao")
-PAINEL_SENHA = _env("PAINEL_SENHA", "troque-esta-senha")
+# --- Sistema da clínica (recepção / coordenação) ---------------------------
+# Usuários no formato  login:senha:papel  separados por vírgula.
+# Papéis: recepcao | coordenacao  (coordenação também configura as clínicas)
+USUARIOS = _env("USUARIOS", "coordenacao:troque-esta-senha:coordenacao,recepcao:troque-esta-senha:recepcao")
+CHAVE_SESSAO = _env("CHAVE_SESSAO", "troque-por-um-texto-aleatorio")
+ARQUIVOS_DIR = _env("ARQUIVOS_DIR", "./arquivos")
+TAMANHO_MAX_ARQUIVO_MB = int(_env("TAMANHO_MAX_ARQUIVO_MB", "20"))
+
+
+def usuarios() -> dict[str, tuple[str, str]]:
+    """{login: (senha, papel)}"""
+    res = {}
+    for item in USUARIOS.split(","):
+        partes = item.strip().split(":")
+        if len(partes) >= 2 and partes[0]:
+            res[partes[0]] = (partes[1], partes[2] if len(partes) > 2 else "recepcao")
+    return res
 
 
 def chatwoot_ativo() -> bool:

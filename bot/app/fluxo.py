@@ -21,6 +21,7 @@ from sqlalchemy.orm import Session
 
 from . import config, textos as T
 from .mensagens import Botoes, Entrada, Lista, Resposta, Texto, resumo
+from .agenda import VagaIndisponivel, agendamentos_futuros, agendar, cancelar as cancelar_agendamento, especialidades_atendidas, vagas_disponiveis
 from .models import Agendamento, Conversa, Especialidade, ListaEspera, Mensagem, Paciente, Vaga
 
 DIAS = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"]
@@ -104,10 +105,8 @@ def tela_privacidade() -> Botoes:
     return Botoes(T.AVISO_PRIVACIDADE, [("lgpd:sim", T.BOTAO_CONCORDO), ("lgpd:nao", T.BOTAO_NAO_CONCORDO)])
 
 
-def tela_especialidades(s: Session) -> Lista:
-    esps = s.scalars(
-        select(Especialidade).where(Especialidade.ativa).order_by(Especialidade.codigo != "triagem", Especialidade.nome)
-    ).all()
+def tela_especialidades(s: Session, p: Paciente) -> Lista:
+    esps = especialidades_atendidas(s, idade=p.idade(), so_bot=True)
     return Lista(
         T.PERGUNTA_ESPECIALIDADE,
         T.MENU_BOTAO,
@@ -128,23 +127,12 @@ def tela_turno() -> Lista:
     )
 
 
-def vagas_disponiveis(s: Session, especialidade_id: int, turno: str) -> list[Vaga]:
-    a_partir = datetime.combine(config.agora().date() + timedelta(days=config.DIAS_ANTECEDENCIA_MIN), datetime.min.time())
-    vagas = s.scalars(
-        select(Vaga)
-        .where(Vaga.especialidade_id == especialidade_id, Vaga.inicio >= a_partir, Vaga.ocupadas < Vaga.capacidade)
-        .order_by(Vaga.inicio)
-        .limit(200)
-    ).all()
-    if turno != "qualquer":
-        vagas = [v for v in vagas if v.turno == turno]
-    return vagas[: config.MAX_HORARIOS_OFERECIDOS]
-
-
 def tela_horarios(s: Session, conv: Conversa) -> Resposta:
     ctx = conv.contexto
     esp = s.get(Especialidade, ctx["especialidade_id"])
-    vagas = vagas_disponiveis(s, esp.id, ctx.get("turno", "qualquer"))
+    vagas = vagas_disponiveis(
+        s, esp.id, ctx.get("turno", "qualquer"), idade=conv.paciente.idade(), limite=config.MAX_HORARIOS_OFERECIDOS
+    )
     if not vagas:
         conv.estado = "sem_vaga"
         return Botoes(
@@ -160,25 +148,6 @@ def tela_horarios(s: Session, conv: Conversa) -> Resposta:
             for v in vagas
         ],
     )
-
-
-def agendamentos_futuros(s: Session, p: Paciente) -> list[Agendamento]:
-    return s.scalars(
-        select(Agendamento)
-        .join(Vaga)
-        .where(
-            Agendamento.paciente_id == p.id,
-            Agendamento.status.in_(["agendado", "confirmado"]),
-            Vaga.inicio >= config.agora(),
-        )
-        .order_by(Vaga.inicio)
-    ).all()
-
-
-def cancelar_agendamento(ag: Agendamento) -> None:
-    if ag.status in ("agendado", "confirmado"):
-        ag.status = "cancelado"
-        ag.vaga.ocupadas = max(0, ag.vaga.ocupadas - 1)
 
 
 # --------------------------------------------------------------------------- ações
@@ -315,7 +284,7 @@ def _estado_menu(s, e, p, conv, escolha):
     if escolha == "menu:agendar":
         return _iniciar_agendamento(p, conv)
     if escolha == "menu:info":
-        esps = s.scalars(select(Especialidade).where(Especialidade.ativa).order_by(Especialidade.nome)).all()
+        esps = especialidades_atendidas(s, so_bot=True)
         lista = "\n".join(f"🦷 *{x.nome}* — {x.descricao}" for x in esps)
         return _ir_menu(conv, [Texto(T.INFO_ESPECIALIDADES.format(lista=lista)), Texto(T.INFO_GERAL)])
     if escolha == "menu:meus":
@@ -323,7 +292,7 @@ def _estado_menu(s, e, p, conv, escolha):
         if not ags:
             return _ir_menu(conv, [Texto(T.SEM_AGENDAMENTOS)])
         lista = "\n".join(
-            f"🦷 *{a.vaga.especialidade.nome}* — {fmt_data(a.vaga.inicio)} às {fmt_hora(a.vaga.inicio)}" for a in ags
+            f"🦷 *{a.descricao}* — {fmt_data(a.vaga.inicio)} às {fmt_hora(a.vaga.inicio)}" for a in ags
         )
         conv.estado = "meus"
         return [Botoes(T.LISTA_AGENDAMENTOS.format(lista=lista), [("cancelar", T.BOTAO_CANCELAR), ("menu", T.BOTAO_MENU)])]
@@ -338,7 +307,7 @@ def _estado_meus(s, e, p, conv, escolha):
             Lista(
                 T.CANCELAR_QUAL,
                 T.MENU_BOTAO,
-                [(f"cancelar:{a.id}", f"{DIAS[a.vaga.inicio.weekday()]} {a.vaga.inicio:%d/%m %H:%M}", a.vaga.especialidade.nome) for a in ags],
+                [(f"cancelar:{a.id}", f"{DIAS[a.vaga.inicio.weekday()]} {a.vaga.inicio:%d/%m %H:%M}", a.descricao[:72]) for a in ags],
             )
         ]
     return _ir_menu(conv)
@@ -376,7 +345,7 @@ def _estado_queixa(s, e, p, conv, escolha):
         return [Texto(T.PERGUNTA_QUEIXA)]
     _ctx(conv, queixa=e.texto.strip()[:500])
     conv.estado = "especialidade"
-    return [tela_especialidades(s)]
+    return [tela_especialidades(s, p)]
 
 
 def _estado_especialidade(s, e, p, conv, escolha):
@@ -384,7 +353,7 @@ def _estado_especialidade(s, e, p, conv, escolha):
         _ctx(conv, especialidade_id=int(escolha.split(":")[1]))
         conv.estado = "turno"
         return [tela_turno()]
-    return [Texto(T.NAO_ENTENDI), tela_especialidades(s)]
+    return [Texto(T.NAO_ENTENDI), tela_especialidades(s, p)]
 
 
 def _estado_turno(s, e, p, conv, escolha):
@@ -411,11 +380,12 @@ def _estado_horario(s, e, p, conv, escolha):
     if escolha and escolha.startswith("vaga:"):
         v = s.get(Vaga, int(escolha.split(":")[1]))
         if v:
+            esp = s.get(Especialidade, conv.contexto["especialidade_id"])
             _ctx(conv, vaga_id=v.id)
             conv.estado = "confirmar"
             return [
                 Botoes(
-                    T.CONFIRMAR_AGENDAMENTO.format(especialidade=v.especialidade.nome, data=fmt_data(v.inicio), hora=fmt_hora(v.inicio)),
+                    T.CONFIRMAR_AGENDAMENTO.format(especialidade=esp.nome, data=fmt_data(v.inicio), hora=fmt_hora(v.inicio)),
                     [("confirmar:sim", T.BOTAO_SIM), ("confirmar:nao", T.BOTAO_NAO)],
                 )
             ]
@@ -424,14 +394,15 @@ def _estado_horario(s, e, p, conv, escolha):
 
 def _estado_confirmar(s, e, p, conv, escolha):
     if escolha == "confirmar:sim":
-        v = s.get(Vaga, conv.contexto["vaga_id"], with_for_update=True)
-        if not v or v.livres <= 0:
+        ctx = conv.contexto
+        try:
+            ag = agendar(s, p, ctx["vaga_id"], especialidade_id=ctx.get("especialidade_id"), queixa=ctx.get("queixa"), origem="bot")
+        except VagaIndisponivel:
             return [Texto(T.VAGA_ACABOU), tela_horarios(s, conv)]
-        v.ocupadas += 1
-        s.add(Agendamento(paciente_id=p.id, vaga_id=v.id, queixa=conv.contexto.get("queixa")))
         conv.estado = "inicio"
         conv.contexto = {}
-        return [Texto(T.AGENDAMENTO_OK.format(especialidade=v.especialidade.nome, data=fmt_data(v.inicio), hora=fmt_hora(v.inicio)))]
+        v = ag.vaga
+        return [Texto(T.AGENDAMENTO_OK.format(especialidade=ag.especialidade.nome, data=fmt_data(v.inicio), hora=fmt_hora(v.inicio)))]
     if escolha == "confirmar:nao":
         conv.estado = "turno"
         return [tela_turno()]
@@ -449,7 +420,7 @@ def _resposta_lembrete(s, p, conv, escolha) -> Resultado:
         conv.estado = "inicio"
         return Resultado([Texto(T.LEMBRETE_CONFIRMADO)])
     cancelar_agendamento(ag)
-    _ctx(conv, queixa=ag.queixa, especialidade_id=ag.vaga.especialidade_id)
+    _ctx(conv, queixa=ag.queixa, especialidade_id=ag.especialidade_id or ag.vaga.sessao.especialidades[0].id)
     conv.estado = "turno"
     return Resultado([Texto(T.LEMBRETE_REMARCAR), tela_turno()])
 
@@ -468,7 +439,7 @@ def _estado_recuperacao(s, e, p, conv, escolha):
     if anterior == "queixa":
         return [Texto(T.PERGUNTA_QUEIXA)]
     if anterior == "especialidade":
-        return [tela_especialidades(s)]
+        return [tela_especialidades(s, p)]
     if anterior == "turno":
         return [tela_turno()]
     if anterior in ("horario", "confirmar", "sem_vaga"):

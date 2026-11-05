@@ -1,0 +1,76 @@
+{% extends "base.html" %}{% block titulo %}Agendar{% endblock %}
+{% block conteudo %}
+<h1>Agendar paciente</h1>
+<p class="sub">Escolha o paciente e o procedimento: o sistema mostra as clínicas que atendem esse procedimento, com vaga e na faixa etária certa.</p>
+
+<div class="caixa">
+  <h2>1. Paciente</h2>
+  {% if p %}
+    <div class="linha entre">
+      <div><b>{{ p.nome_exibicao }}</b> <small>{% if p.telefone %}{{ p.telefone|fone }}{% endif %}{% if p.idade() is not none %} · {{ p.idade() }} anos{% else %} · <span style="color:var(--amarelo)">sem data de nascimento</span>{% endif %}</small></div>
+      <a class="btn sec peq" href="/agendar?procedimento={{ procedimento }}">Trocar paciente</a>
+    </div>
+  {% else %}
+    <form method="get" class="linha">
+      <input type="hidden" name="procedimento" value="{{ procedimento }}">
+      <input name="busca" value="{{ busca }}" placeholder="Nome, telefone, CPF ou nº do prontuário" style="flex:1" autofocus>
+      <button class="btn sec">Buscar</button>
+      <a class="btn sec" href="/pacientes/novo">+ Novo paciente</a>
+    </form>
+    {% if busca %}
+      <div class="tabela" style="margin-top:10px"><table>
+      {% for r in resultados %}
+        <tr><td><b>{{ r.nome_exibicao }}</b> <small>{% if r.telefone %}{{ r.telefone|fone }}{% endif %}{% if r.idade() is not none %} · {{ r.idade() }} anos{% endif %}</small></td>
+          <td style="text-align:right"><a class="btn peq" href="/agendar?paciente_id={{ r.id }}&procedimento={{ procedimento }}">Escolher</a></td></tr>
+      {% else %}<tr><td class="vazio">Ninguém encontrado. <a href="/pacientes/novo">Cadastrar novo paciente</a>.</td></tr>{% endfor %}
+      </table></div>
+    {% endif %}
+  {% endif %}
+</div>
+
+{% if p %}
+<div class="caixa">
+  <h2>2. Procedimento e preferência</h2>
+  <form method="get" class="campos">
+    <input type="hidden" name="paciente_id" value="{{ p.id }}">
+    <input type="hidden" name="espera_id" value="{{ espera_id }}">
+    <div><label>Procedimento ou área</label>{% with selecionado=procedimento, com_vazio=true, autoenviar=true %}{% include "_select_procedimento.html" %}{% endwith %}</div>
+    <div><label>Turma</label><select name="turma" onchange="this.form.submit()"><option value="">Qualquer turma</option>{% for t in turmas %}<option {{ 'selected' if t == turma }}>{{ t }}</option>{% endfor %}</select></div>
+    <div><label>Turno</label><select name="turno" onchange="this.form.submit()">
+      {% for val, rot in [('qualquer','Qualquer'),('manha','Manhã'),('tarde','Tarde'),('noite','Noite')] %}<option value="{{ val }}" {{ 'selected' if val == turno }}>{{ rot }}</option>{% endfor %}
+    </select></div>
+  </form>
+</div>
+
+{% if procedimento %}
+<div class="caixa tabela">
+  <h2>3. Horários disponíveis</h2>
+  {% if vagas %}
+  <table>
+    <tr><th>Data</th><th>Turma / clínica</th><th>Professor</th><th>Vagas livres</th><th></th></tr>
+    {% for v in vagas %}
+    <tr>
+      <td><b>{{ DIAS_SEMANA[v.inicio.weekday()] }} {{ v.inicio.strftime('%d/%m') }}</b><br><small>{{ v.inicio.strftime('%H:%M') }}–{{ v.fim.strftime('%H:%M') }}</small></td>
+      <td>{{ v.sessao.turma }}<br><small>{{ v.sessao.nome }} · {{ v.sessao.areas }}</small></td>
+      <td>{{ v.sessao.professor }}</td>
+      <td>{{ v.livres }} de {{ v.capacidade }}</td>
+      <td style="text-align:right">
+        <form method="post" action="/agenda/vaga/{{ v.id }}/agendar" class="inline">
+          <input type="hidden" name="paciente_id" value="{{ p.id }}">
+          <input type="hidden" name="procedimento" value="{{ procedimento }}">
+          <input type="hidden" name="avisar" value="1">
+          <input type="hidden" name="espera_id" value="{{ espera_id }}">
+          <button class="btn peq">Agendar aqui</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+    <p class="vazio">Nenhum horário livre para esse procedimento{% if p.idade() is not none %} na idade do paciente ({{ p.idade() }} anos){% endif %}.
+    Você pode abrir a <a href="/agenda">agenda</a> e fazer um encaixe.</p>
+  {% endif %}
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}

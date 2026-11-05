@@ -1,0 +1,101 @@
+{% extends "base.html" %}{% block titulo %}{{ v.sessao.turma }} {{ v.inicio.strftime('%d/%m') }}{% endblock %}
+{% block conteudo %}
+{% set se = v.sessao %}
+<p><a href="/agenda?semana={{ v.inicio.date() }}">← voltar para a agenda</a></p>
+<div class="caixa">
+  <div class="linha entre">
+    <div>
+      <h1>{{ DIAS_SEMANA[v.inicio.weekday()] }}, {{ v.inicio.strftime('%d/%m/%Y') }} · {{ v.inicio.strftime('%H:%M') }}–{{ v.fim.strftime('%H:%M') }}</h1>
+      <p class="sub" style="margin:0"><b>{{ se.turma }}</b>{% if se.nome %} · {{ se.nome }}{% endif %}{% if se.professor %} · {{ se.professor }}{% endif %}</p>
+      <p style="margin:6px 0 0">Áreas: <b>{{ se.areas }}</b>{% if se.procedimentos_texto %} · <span class="suave">{{ se.procedimentos_texto }}</span>{% endif %}</p>
+      <p class="suave" style="margin:4px 0 0">{{ se.faixa_etaria }} · {{ v.ativos|length }} de {{ v.capacidade }} vagas ocupadas</p>
+    </div>
+    <div>
+      {% if v.bloqueada %}
+        <span class="tag bloq">⛔ Bloqueado: {{ v.motivo_bloqueio }}</span>
+        <form class="inline" method="post" action="/agenda/vaga/{{ v.id }}/bloqueio"><input type="hidden" name="acao" value="desbloquear"><button class="btn sec peq">Desbloquear</button></form>
+      {% else %}
+        <form class="linha" method="post" action="/agenda/vaga/{{ v.id }}/bloqueio" onsubmit="return confirm('Bloquear este dia? O bot para de oferecer este horário.')">
+          <input type="hidden" name="acao" value="bloquear">
+          <input name="motivo" placeholder="Motivo (ex.: professor ausente, prova)" style="width:260px">
+          <button class="btn perigo peq">Bloquear dia</button>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="caixa tabela">
+  <h2>Pacientes agendados</h2>
+  {% if v.agendamentos %}
+  <table>
+    <tr><th>#</th><th>Paciente</th><th>Procedimento</th><th>Aluno / observação</th><th>Status</th><th>Presença</th></tr>
+    {% for a in v.agendamentos %}
+    <tr>
+      <td>{{ loop.index }}</td>
+      <td><a href="/pacientes/{{ a.paciente.id }}"><b>{{ a.paciente.nome_exibicao }}</b></a><br>
+        <small>{% if a.paciente.telefone %}{{ a.paciente.telefone|fone }}{% else %}sem WhatsApp{% endif %}
+        {% if a.paciente.idade() is not none %} · {{ a.paciente.idade() }} anos{% endif %}
+        {% if a.paciente.numero_prontuario %} · pront. {{ a.paciente.numero_prontuario }}{% endif %}</small></td>
+      <td>{{ a.descricao }}{% if a.queixa %}<br><small>“{{ a.queixa }}”</small>{% endif %}<br><small>{{ 'pelo WhatsApp' if a.origem == 'bot' else 'pela recepção' }}</small></td>
+      <td>
+        <form method="post" action="/agenda/agendamento/{{ a.id }}/editar" class="linha" style="gap:6px">
+          <input name="aluno" value="{{ a.aluno or '' }}" placeholder="Aluno" style="width:140px">
+          <input name="observacao" value="{{ a.observacao or '' }}" placeholder="Observação" style="width:160px">
+          <button class="btn sec peq">Salvar</button>
+        </form>
+      </td>
+      <td><span class="tag {{ a.status }}">{{ a.status }}</span></td>
+      <td style="white-space:nowrap">
+        {% if a.status != 'cancelado' %}
+        {% for st, rot in [('compareceu','✔ Veio'),('faltou','✖ Faltou'),('cancelado','Cancelar')] %}
+        <form class="inline" method="post" action="/agenda/agendamento/{{ a.id }}/status"><input type="hidden" name="status" value="{{ st }}"><button class="btn sec peq">{{ rot }}</button></form>
+        {% endfor %}
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}<p class="vazio">Nenhum paciente agendado neste dia.</p>{% endif %}
+</div>
+
+{% if not v.bloqueada %}
+<div class="caixa">
+  <h2>Agendar paciente neste dia</h2>
+  <form method="get" class="linha" style="margin-bottom:12px">
+    <input name="busca" value="{{ busca }}" placeholder="Buscar paciente: nome, telefone, CPF ou nº do prontuário" style="flex:1">
+    <button class="btn sec">Buscar</button>
+  </form>
+  <form method="post" action="/agenda/vaga/{{ v.id }}/agendar">
+    {% if busca %}
+      {% if resultados %}
+      <div class="tabela" style="margin-bottom:12px"><table>
+        {% for p in resultados %}
+        <tr><td style="width:30px"><input type="radio" name="paciente_id" value="{{ p.id }}" {{ 'checked' if loop.first }} style="width:auto"></td>
+          <td><b>{{ p.nome_exibicao }}</b> <small>{% if p.telefone %}{{ p.telefone|fone }}{% endif %}{% if p.idade() is not none %} · {{ p.idade() }} anos{% endif %}{% if p.numero_prontuario %} · pront. {{ p.numero_prontuario }}{% endif %}</small></td></tr>
+        {% endfor %}
+      </table></div>
+      {% else %}<p class="vazio">Nenhum paciente encontrado. Cadastre abaixo.</p>{% endif %}
+    {% endif %}
+    {% if not resultados %}
+    <h3>Novo paciente</h3>
+    <div class="campos">
+      <div><label>Nome completo</label><input name="novo_nome" value="{{ busca if busca and not busca[0].isdigit() }}"></div>
+      <div><label>WhatsApp (com DDD)</label><input name="novo_telefone" placeholder="(11) 98888-7777"></div>
+      <div><label>Data de nascimento</label><input type="date" name="novo_nascimento"></div>
+    </div>
+    {% endif %}
+    <div class="campos">
+      <div><label>Procedimento</label>{% with selecionado='', com_vazio=false, autoenviar=false %}{% include "_select_procedimento.html" %}{% endwith %}</div>
+      <div><label>Aluno (opcional)</label><input name="aluno"></div>
+      <div><label>Observação (opcional)</label><input name="observacao"></div>
+    </div>
+    <div class="linha" style="margin-bottom:12px">
+      <label class="check"><input type="checkbox" name="avisar" value="1" checked> Avisar o paciente pelo WhatsApp</label>
+      <label class="check"><input type="checkbox" name="encaixe" value="1"> Encaixe (além do limite / fora da faixa etária)</label>
+    </div>
+    <button class="btn">Agendar</button>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

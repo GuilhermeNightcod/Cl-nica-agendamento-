@@ -1,0 +1,35 @@
+{% extends "base.html" %}{% block titulo %}Clínica{% endblock %}
+{% block conteudo %}
+<p><a href="/clinicas">← clínicas</a></p>
+<div class="caixa">
+  <h1>{{ 'Editar clínica' if se else 'Nova clínica' }}</h1>
+  <p class="sub">Um horário fixo semanal de atendimento de uma turma.</p>
+  <form method="post" action="{{ '/clinicas/%d'|format(se.id) if se else '/clinicas/nova' }}">
+    <div class="campos">
+      <div><label>Turma *</label><input name="turma" list="turmas" value="{{ se.turma if se else '' }}" placeholder="ex.: 8º semestre" required>
+        <datalist id="turmas">{% for t in turmas %}<option value="{{ t }}">{% endfor %}</datalist></div>
+      <div><label>Nome da clínica</label><input name="nome" value="{{ se.nome if se else '' }}" placeholder="ex.: Clínica Integrada VIII"></div>
+      <div><label>Professor(a) responsável</label><input name="professor" value="{{ se.professor if se else '' }}"></div>
+    </div>
+    <div class="campos">
+      <div><label>Dia da semana *</label><select name="dia_semana">{% for d in DIAS_SEMANA[:6] %}<option value="{{ loop.index0 }}" {{ 'selected' if se and se.dia_semana == loop.index0 }}>{{ d }}</option>{% endfor %}</select></div>
+      <div><label>Início *</label><input type="time" name="hora_inicio" value="{{ se.hora_inicio.strftime('%H:%M') if se else '08:00' }}" required></div>
+      <div><label>Fim *</label><input type="time" name="hora_fim" value="{{ se.hora_fim.strftime('%H:%M') if se else '12:00' }}" required></div>
+      <div><label>Pacientes por dia (vagas) *</label><input type="number" min="1" name="vagas" value="{{ se.vagas if se else 10 }}" required></div>
+    </div>
+    <label>Áreas atendidas * <small>(o bot e a recepção só oferecem este dia para essas áreas)</small></label>
+    <div class="linha" style="margin-bottom:12px;gap:16px">
+      {% for a in areas %}<label class="check"><input type="checkbox" name="areas" value="{{ a.id }}" {{ 'checked' if a.id in marcadas }}> {{ a.nome }}</label>{% endfor %}
+    </div>
+    <div style="margin-bottom:12px"><label>Procedimentos realizados (texto livre, aparece para a recepção)</label>
+      <input name="procedimentos_texto" value="{{ se.procedimentos_texto if se else '' }}" placeholder="ex.: anamnese, capeamento pulpar e acesso"></div>
+    <div class="campos">
+      <div><label>Idade mínima (opcional)</label><input type="number" min="0" name="idade_min" value="{{ se.idade_min if se and se.idade_min is not none else '' }}" placeholder="ex.: 10 (hebiatria)"></div>
+      <div><label>Idade máxima (opcional)</label><input type="number" min="0" name="idade_max" value="{{ se.idade_max if se and se.idade_max is not none else '' }}" placeholder="ex.: 19 (hebiatria) ou 12 (odontopediatria)"></div>
+      <div><label>&nbsp;</label><label class="check"><input type="checkbox" name="ativa" value="1" {{ 'checked' if not se or se.ativa }}> Clínica ativa</label></div>
+    </div>
+    <button class="btn">Salvar e atualizar agenda</button>
+    <p class="suave" style="font-size:13px">Ao salvar, as datas futuras são recriadas. Datas com pacientes nunca são apagadas: se deixarem de existir, ficam bloqueadas e aparecem em Indicadores para remarcar.</p>
+  </form>
+</div>
+{% endblock %}

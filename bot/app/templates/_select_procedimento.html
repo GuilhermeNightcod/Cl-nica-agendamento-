@@ -1,0 +1,9 @@
+<select name="procedimento" {{ 'onchange=this.form.submit()' if autoenviar }}>
+  {% if com_vazio %}<option value="">— escolha o procedimento ou área —</option>{% endif %}
+  {% for area, procs in areas %}
+  <optgroup label="{{ area.nome }}">
+    <option value="esp:{{ area.id }}" {{ 'selected' if selecionado == 'esp:%d'|format(area.id) }}>{{ area.nome }} (geral)</option>
+    {% for pr in procs %}<option value="proc:{{ pr.id }}" {{ 'selected' if selecionado == 'proc:%d'|format(pr.id) }}>{{ pr.nome }}</option>{% endfor %}
+  </optgroup>
+  {% endfor %}
+</select>

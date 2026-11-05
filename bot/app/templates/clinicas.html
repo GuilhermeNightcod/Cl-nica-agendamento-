@@ -1,0 +1,32 @@
+{% extends "base.html" %}{% block titulo %}Clínicas{% endblock %}
+{% block conteudo %}
+<div class="linha entre" style="margin-bottom:14px">
+  <div><h1>Clínicas das turmas</h1>
+    <p class="sub" style="margin:0">Dias fixos de atendimento de cada turma. O sistema gera a agenda de
+    {{ config.SEMESTRE_INICIO.strftime('%d/%m/%Y') }} a {{ config.SEMESTRE_FIM.strftime('%d/%m/%Y') }}, pulando os feriados.</p></div>
+  <div class="linha">
+    <form class="inline" method="post" action="/clinicas-gerar"><button class="btn sec">Atualizar agenda do semestre</button></form>
+    <a class="btn" href="/clinicas/nova">+ Nova clínica</a>
+  </div>
+</div>
+{% for turma, sessoes in por_turma.items() %}
+<div class="caixa tabela">
+  <h2>{{ turma }}</h2>
+  <table>
+    <tr><th>Dia</th><th>Horário</th><th>Clínica / professor</th><th>Áreas</th><th>Procedimentos</th><th>Vagas</th><th>Idade</th><th></th></tr>
+    {% for se in sessoes %}
+    <tr style="{{ 'opacity:.5' if not se.ativa }}">
+      <td><b>{{ se.dia_nome }}</b>{% if not se.ativa %}<br><span class="tag">inativa</span>{% endif %}</td>
+      <td>{{ se.horario }}</td>
+      <td>{{ se.nome }}<br><small>{{ se.professor }}</small></td>
+      <td>{{ se.areas }}</td>
+      <td><small>{{ se.procedimentos_texto }}</small></td>
+      <td>{{ se.vagas }}</td>
+      <td><small>{{ se.faixa_etaria }}</small></td>
+      <td><a class="btn sec peq" href="/clinicas/{{ se.id }}">Editar</a></td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% else %}<div class="caixa vazio">Nenhuma clínica cadastrada. Clique em “Nova clínica”.</div>{% endfor %}
+{% endblock %}
