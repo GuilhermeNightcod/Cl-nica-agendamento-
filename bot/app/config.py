@@ -55,6 +55,8 @@ CHAVE_SESSAO = _env("CHAVE_SESSAO", "troque-por-um-texto-aleatorio")
 # cria e gerencia os logins na tela "Usuários". No primeiro acesso cada um troca a senha.
 TROCAR_SENHA_INICIAL = _env("TROCAR_SENHA_INICIAL", "sim").lower() not in ("nao", "não", "0", "false")
 ARQUIVOS_DIR = _env("ARQUIVOS_DIR", "./arquivos")
+# Endereço do sistema que aparece nos cartões de login dos alunos (ex.: odonto.suafaculdade.edu.br)
+ENDERECO_SITE = _env("ENDERECO_SITE")
 TAMANHO_MAX_ARQUIVO_MB = int(_env("TAMANHO_MAX_ARQUIVO_MB", "20"))
 
 

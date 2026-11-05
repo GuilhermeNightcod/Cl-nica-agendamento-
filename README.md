@@ -46,7 +46,8 @@ Cada clínica pode ter **faixa etária**: Adolescente (10 a 19 anos), Criança (
 | **Lista de espera** | Recepção | Quem não encontrou vaga, com botão para agendar quando abrir |
 | **Indicadores** | Coordenação | Novos pacientes, % que agendou, faltas, ocupação de cada clínica, pacientes de dias bloqueados para remarcar, conversas abandonadas no WhatsApp |
 | **Clínicas** | Coordenação | Cadastrar e editar os dias de clínica de cada turma. Ao salvar, a agenda do semestre é refeita |
-| **Usuários** | Coordenação | Criar login para cada pessoa (recepção ou coordenação), gerar senha provisória, redefinir senha esquecida e desativar quem saiu |
+| **Área do aluno** (celular) | Aluno | Vê as clínicas da **própria turma**, forma a **dupla**, agenda pacientes, altera horário e procedimento, remarca, marca presença e abre ficha, odontograma e prontuário **só dos pacientes da dupla** |
+| **Usuários** | Coordenação | Criar login para cada pessoa (recepção, coordenação ou aluno), **cadastrar a turma inteira colando a lista de nomes** (gera cartões de login para imprimir), gerar senha provisória, redefinir senha esquecida e desativar quem saiu |
 | **Acessos** | Coordenação | Quem entrou, abriu fichas, viu documentos ou mudou dados (LGPD) |
 
 ### Atendimentos (WhatsApp) 💬
@@ -60,6 +61,14 @@ pela ficha do paciente.
 > (`TEMPLATE_CONTATO`). O sistema avisa e mostra o botão.
 
 ![Atendimentos](docs/telas/atendimentos.png)
+
+### Área do aluno 📱
+O aluno entra pelo celular com o próprio login e cai direto em **Minha agenda**: as próximas clínicas da turma,
+as vagas livres e os pacientes da dupla. Ele agenda (respeitando vagas e faixa etária), muda horário e
+procedimento, **remarca** para outro dia da turma, marca **veio/faltou** e cancela. Encaixe acima do limite
+continua sendo só da recepção. O aluno não vê a lista geral de pacientes, o WhatsApp nem os indicadores.
+
+![Aluno no celular](docs/telas/cel_inicio.png)
 
 ### Odontograma 🦷
 Na ficha do paciente: dentes **permanentes e decíduos** (numeração FDI), clique no dente, escolha o

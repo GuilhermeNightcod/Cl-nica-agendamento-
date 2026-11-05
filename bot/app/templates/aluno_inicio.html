@@ -1,0 +1,40 @@
+{% extends "base.html" %}{% block titulo %}Minha agenda{% endblock %}
+{% block conteudo %}
+<div class="aluno-pag">
+  <div class="saudacao" style="margin-bottom:16px">
+    <h1>Olá, {{ eu.nome.split()[0] }}</h1>
+    <p class="sub" style="margin:0">{{ eu.turma }}{% if total_meus %}, {{ total_meus }} paciente{{ 's' if total_meus > 1 }} agendado{{ 's' if total_meus > 1 }} nas próximas semanas{% endif %}</p>
+  </div>
+
+  <form class="caixa" method="post" action="/aluno/dupla" style="padding:14px 16px">
+    <label for="dupla">Minha dupla</label>
+    <div class="linha" style="flex-wrap:nowrap">
+      <select id="dupla" name="dupla_id">
+        <option value="">Sem dupla</option>
+        {% for c in colegas %}<option value="{{ c.id }}" {{ 'selected' if parceiro and parceiro.id == c.id }}>{{ c.nome }}{{ ' (já tem dupla)' if c.dupla_id and c.dupla_id != eu.id }}</option>{% endfor %}
+      </select>
+      <button class="btn sec">Salvar</button>
+    </div>
+    {% if not parceiro %}<small>Os pacientes que você agendar ficam com a sua dupla. Escolha seu colega para os dois verem a mesma agenda.</small>{% endif %}
+  </form>
+
+  <h2>Próximas clínicas <span class="suave" style="font-weight:400;font-size:var(--t-sm)">{{ semanas }} semanas</span></h2>
+  {% for v in vagas %}
+    {% set meus = por_vaga.get(v.id, []) %}
+    <a class="cartao-dia {{ 'hoje' if v.inicio.date() == hoje }} {{ 'bloq' if v.bloqueada }}" href="/aluno/vaga/{{ v.id }}">
+      <div class="topo">
+        <span class="data">{{ DIAS_SEMANA[v.inicio.weekday()] }} {{ v.inicio.strftime('%d/%m') }}<small>{{ v.inicio.strftime('%H:%M') }}–{{ v.fim.strftime('%H:%M') }}</small></span>
+        {% if v.bloqueada %}<span class="livres" style="color:var(--erro)">Sem clínica</span>
+        {% else %}<span class="livres" style="color:{{ 'var(--erro)' if v.livres == 0 else 'var(--campo)' }}">{{ v.livres }} vaga{{ 's' if v.livres != 1 }}</span>{% endif %}
+      </div>
+      <div class="disc">{{ v.sessao.nome }}{% if v.sessao.professor %}, {{ v.sessao.professor }}{% endif %}</div>
+      {% if v.bloqueada %}<small style="color:var(--erro)">{{ v.motivo_bloqueio }}</small>
+      {% else %}<div class="boxes" style="color:var(--campo)">{% for i in range(v.capacidade) %}<i class="{{ 'ocupado' if i < v.ativos|length }}"></i>{% endfor %}</div>{% endif %}
+      {% if meus %}<ul class="meus">{% for a in meus %}<li>{% if a.hora %}<b>{{ a.hora.strftime('%H:%M') }}</b>{% endif %}{{ a.paciente.nome_exibicao }}, {{ a.descricao }}{% if a.status == 'confirmado' %} <span class="tag confirmado">confirmado</span>{% endif %}</li>{% endfor %}</ul>{% endif %}
+    </a>
+  {% else %}
+    <div class="caixa vazio">Nenhuma clínica da sua turma nas próximas semanas.</div>
+  {% endfor %}
+  {% if semanas < 8 %}<a class="btn sec grande" href="/aluno?semanas={{ semanas + 2 }}">Ver mais semanas</a>{% endif %}
+</div>
+{% endblock %}

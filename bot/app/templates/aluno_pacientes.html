@@ -1,0 +1,17 @@
+{% extends "base.html" %}{% block titulo %}Meus pacientes{% endblock %}
+{% block conteudo %}
+<div class="aluno-pag">
+  <h1>Meus pacientes</h1>
+  <p class="sub">Pacientes que você ou sua dupla já agendaram.</p>
+  <div class="caixa lista-toque" style="padding:4px 16px">
+    {% for d in lista %}
+    <a href="/aluno/paciente/{{ d.p.id }}">
+      <span class="av">{{ d.p.nome_exibicao[:1] }}</span>
+      <span class="info"><b>{{ d.p.nome_exibicao }}</b>
+        <small>{% if d.proxima %}Próxima: {{ DIAS_SEMANA[d.proxima.inicio.weekday()][:3] }} {{ d.proxima.inicio.strftime('%d/%m %H:%M') }}, {{ d.proxima.descricao }}{% elif d.ultima %}Última: {{ d.ultima.inicio.strftime('%d/%m') }}, {{ d.ultima.descricao }}{% endif %}</small></span>
+      <span class="suave" aria-hidden="true">›</span>
+    </a>
+    {% else %}<p class="vazio">Você ainda não tem pacientes. Abra um dia em Minha agenda para agendar.</p>{% endfor %}
+  </div>
+</div>
+{% endblock %}

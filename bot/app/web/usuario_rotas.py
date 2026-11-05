@@ -7,7 +7,7 @@ from .. import config
 from .. import usuarios as U
 from ..db import sessao
 from ..models import RegistroAcesso, Usuario
-from .rotas import coordenacao, int_ou_none, ir, render, usuario
+from .rotas import coordenacao, int_ou_none, ir, render, turmas, usuario
 
 router = APIRouter()
 
@@ -25,33 +25,36 @@ def lista(request: Request, u=Depends(coordenacao)):
 
 @router.get("/usuarios/novo", response_class=HTMLResponse)
 def form_novo(request: Request, u=Depends(coordenacao)):
-    return render(request, "usuario_form.html", alvo=None, papeis=U.PAPEIS, dados={})
+    with sessao() as s:
+        return render(request, "usuario_form.html", alvo=None, papeis=U.PAPEIS, dados={}, turmas=turmas(s))
 
 
 @router.post("/usuarios/novo", response_class=HTMLResponse)
-def criar(request: Request, nome: str = Form(""), login: str = Form(""), papel: str = Form("recepcao"), u=Depends(coordenacao)):
+def criar(request: Request, nome: str = Form(""), login: str = Form(""), papel: str = Form("recepcao"), turma: str = Form(""),
+          u=Depends(coordenacao)):
     with sessao() as s:
         try:
-            novo, senha = U.criar(s, login, nome, papel, criado_por=u["login"])
+            novo, senha = U.criar(s, login, nome, papel, criado_por=u["login"], turma=turma)
         except U.ErroUsuario as e:
-            return render(request, "usuario_form.html", alvo=None, papeis=U.PAPEIS, erro=str(e),
-                          dados={"nome": nome, "login": login, "papel": papel})
+            return render(request, "usuario_form.html", alvo=None, papeis=U.PAPEIS, erro=str(e), turmas=turmas(s),
+                          dados={"nome": nome, "login": login, "papel": papel, "turma": turma})
         _registrar(s, u["login"], "criou usuário", f"{novo.login} ({novo.papel_nome})")
         # a senha provisória aparece UMA vez, nesta tela; não vai para a URL nem para o registro
         return render(request, "usuario_senha.html", alvo=novo, senha=senha, criado=True)
 
 
-@router.get("/usuarios/{uid}", response_class=HTMLResponse)
+@router.get("/usuarios/{uid:int}", response_class=HTMLResponse)
 def form_editar(request: Request, uid: int, u=Depends(coordenacao)):
     with sessao() as s:
         alvo = s.get(Usuario, uid)
         if not alvo:
             raise HTTPException(404)
-        return render(request, "usuario_form.html", alvo=alvo, papeis=U.PAPEIS, dados={})
+        return render(request, "usuario_form.html", alvo=alvo, papeis=U.PAPEIS, dados={}, turmas=turmas(s))
 
 
-@router.post("/usuarios/{uid}")
-def editar(uid: int, nome: str = Form(""), papel: str = Form("recepcao"), ativo: str = Form(""), u=Depends(coordenacao)):
+@router.post("/usuarios/{uid:int}")
+def editar(uid: int, nome: str = Form(""), papel: str = Form("recepcao"), ativo: str = Form(""), turma: str = Form(""),
+           u=Depends(coordenacao)):
     with sessao() as s:
         alvo = s.get(Usuario, uid)
         if not alvo:
@@ -63,6 +66,9 @@ def editar(uid: int, nome: str = Form(""), papel: str = Form("recepcao"), ativo:
             return ir(f"/usuarios/{uid}", erro="Você não pode desativar o seu próprio usuário.")
         if papel not in U.PAPEIS or not nome.strip():
             return ir(f"/usuarios/{uid}", erro="Preencha o nome e o papel.")
+        if papel == "aluno" and not turma.strip():
+            return ir(f"/usuarios/{uid}", erro="Informe a turma do aluno.")
+        alvo.turma = turma.strip() if papel == "aluno" else None
         mudancas = []
         if alvo.papel != papel:
             mudancas.append(f"papel {alvo.papel_nome} → {U.PAPEIS[papel]}")
@@ -73,7 +79,7 @@ def editar(uid: int, nome: str = Form(""), papel: str = Form("recepcao"), ativo:
     return ir("/usuarios", msg="Usuário salvo.")
 
 
-@router.post("/usuarios/{uid}/redefinir-senha", response_class=HTMLResponse)
+@router.post("/usuarios/{uid:int}/redefinir-senha", response_class=HTMLResponse)
 def redefinir(request: Request, uid: int, u=Depends(coordenacao)):
     with sessao() as s:
         alvo = s.get(Usuario, uid)
@@ -109,3 +115,30 @@ def trocar_minha_senha(request: Request, atual: str = Form(""), nova: str = Form
         _registrar(s, eu.login, "trocou a própria senha", eu.login)
     request.session["usuario"] = {**u, "trocar_senha": False}
     return ir("/agenda", msg="Senha alterada.")
+
+
+# ------------------------------------------------------------------ cadastro de turma inteira
+@router.get("/usuarios/importar", response_class=HTMLResponse)
+def tela_importar(request: Request, u=Depends(coordenacao)):
+    with sessao() as s:
+        return render(request, "usuarios_importar.html", turmas=turmas(s), criados=None)
+
+
+@router.post("/usuarios/importar", response_class=HTMLResponse)
+def importar(request: Request, turma: str = Form(""), nomes: str = Form(""), u=Depends(coordenacao)):
+    with sessao() as s:
+        lista_turmas = turmas(s)
+        if turma not in lista_turmas:
+            return render(request, "usuarios_importar.html", turmas=lista_turmas, criados=None, erro="Escolha a turma.", nomes=nomes)
+        criados, pulados = [], []
+        for linha in nomes.splitlines():
+            nome = " ".join(linha.replace(";", " ").replace("\t", " ").split())
+            if len(nome) < 3:
+                continue
+            if s.scalar(select(Usuario).where(Usuario.nome == nome.title(), Usuario.papel == "aluno", Usuario.turma == turma)):
+                pulados.append(nome)
+                continue
+            novo, senha = U.criar(s, U.login_sugerido(s, nome), nome.title(), "aluno", criado_por=u["login"], turma=turma)
+            criados.append((novo, senha))
+        _registrar(s, u["login"], "cadastrou alunos", f"{len(criados)} em {turma}")
+        return render(request, "usuarios_importar.html", turmas=lista_turmas, criados=criados, pulados=pulados, turma=turma)

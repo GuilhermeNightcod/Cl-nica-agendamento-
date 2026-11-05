@@ -16,7 +16,7 @@ from .. import config
 from ..db import sessao
 from ..models import Atendimento, Conversa, Usuario, Etiqueta, Mensagem, Paciente, Setor, atendimento_etiqueta
 from . import rotas
-from .rotas import coordenacao, int_ou_none, ir, registrar_acesso, render, templates, usuario
+from .rotas import coordenacao, equipe, int_ou_none, ir, registrar_acesso, render, templates
 
 router = APIRouter()
 ABAS = [("fila", "Fila"), ("meus", "Meus"), ("todos", "Em atend."), ("bot", "Com o bot"), ("finalizados", "Finalizados")]
@@ -117,7 +117,7 @@ def _contexto_chat(s, pid: int | None) -> dict:
 # ------------------------------------------------------------------ telas
 @router.get("/atendimentos", response_class=HTMLResponse)
 def caixa(request: Request, aba: str = "fila", busca: str = "", setor: str = "", etiqueta: str = "", agente: str = "",
-          p: str = "", u=Depends(usuario)):
+          p: str = "", u=Depends(equipe)):
     aba = aba if aba in dict(ABAS) else "fila"
     pid = int_ou_none(p)
     with sessao() as s:
@@ -137,7 +137,7 @@ def caixa(request: Request, aba: str = "fila", busca: str = "", setor: str = "",
 
 @router.get("/atendimentos/_lista", response_class=HTMLResponse)
 def fragmento_lista(request: Request, aba: str = "fila", busca: str = "", setor: str = "", etiqueta: str = "",
-                    agente: str = "", p: str = "", u=Depends(usuario)):
+                    agente: str = "", p: str = "", u=Depends(equipe)):
     with sessao() as s:
         ctx = {**_contexto_lista(s, u, aba, busca, setor, etiqueta, agente, int_ou_none(p)), "contagens": _contagens(s, u),
                "busca": busca, "setor": setor, "etiqueta": etiqueta, "agente": agente}
@@ -145,7 +145,7 @@ def fragmento_lista(request: Request, aba: str = "fila", busca: str = "", setor:
 
 
 @router.get("/atendimentos/_mensagens/{pid}", response_class=HTMLResponse)
-def fragmento_mensagens(request: Request, pid: int, u=Depends(usuario)):
+def fragmento_mensagens(request: Request, pid: int, u=Depends(equipe)):
     with sessao() as s:
         return templates.TemplateResponse(request, "_atend_mensagens.html", {"usuario": u, **_contexto_chat(s, pid)})
 
@@ -162,7 +162,7 @@ def _volta(at: Atendimento, aba: str = "meus", **kw):
 
 
 @router.post("/atendimentos/proximo")
-def pegar_proximo(setor: str = Form(""), u=Depends(usuario)):
+def pegar_proximo(setor: str = Form(""), u=Depends(equipe)):
     with sessao() as s:
         at = A.proximo_da_fila(s, u["login"], int_ou_none(setor))
         if not at:
@@ -171,7 +171,7 @@ def pegar_proximo(setor: str = Form(""), u=Depends(usuario)):
 
 
 @router.post("/atendimentos/{at_id}/assumir")
-def assumir(at_id: int, u=Depends(usuario)):
+def assumir(at_id: int, u=Depends(equipe)):
     with sessao() as s:
         at = _at(s, at_id)
         A.assumir(at, u["login"])
@@ -179,7 +179,7 @@ def assumir(at_id: int, u=Depends(usuario)):
 
 
 @router.post("/atendimentos/paciente/{pid}/abrir")
-def abrir_para_paciente(pid: int, u=Depends(usuario)):
+def abrir_para_paciente(pid: int, u=Depends(equipe)):
     """Atendente assume uma conversa que está com o bot, ou inicia contato com um paciente."""
     with sessao() as s:
         p = s.get(Paciente, pid)
@@ -195,7 +195,7 @@ def abrir_para_paciente(pid: int, u=Depends(usuario)):
 
 
 @router.post("/atendimentos/{at_id}/responder")
-def responder(at_id: int, texto: str = Form(""), u=Depends(usuario)):
+def responder(at_id: int, texto: str = Form(""), u=Depends(equipe)):
     with sessao() as s:
         at = _at(s, at_id)
         if not texto.strip():
@@ -208,7 +208,7 @@ def responder(at_id: int, texto: str = Form(""), u=Depends(usuario)):
 
 
 @router.post("/atendimentos/{at_id}/modelo")
-def modelo_contato(at_id: int, u=Depends(usuario)):
+def modelo_contato(at_id: int, u=Depends(equipe)):
     with sessao() as s:
         at = _at(s, at_id)
         try:
@@ -219,7 +219,7 @@ def modelo_contato(at_id: int, u=Depends(usuario)):
 
 
 @router.post("/atendimentos/{at_id}/transferir")
-def transferir(at_id: int, setor_id: int = Form(...), u=Depends(usuario)):
+def transferir(at_id: int, setor_id: int = Form(...), u=Depends(equipe)):
     with sessao() as s:
         at = _at(s, at_id)
         A.transferir(at, setor_id)
@@ -228,7 +228,7 @@ def transferir(at_id: int, setor_id: int = Form(...), u=Depends(usuario)):
 
 
 @router.post("/atendimentos/{at_id}/etiquetas")
-async def etiquetas(request: Request, at_id: int, u=Depends(usuario)):
+async def etiquetas(request: Request, at_id: int, u=Depends(equipe)):
     ids = [int(x) for x in (await request.form()).getlist("etiquetas") if str(x).isdigit()]
     with sessao() as s:
         at = _at(s, at_id)
@@ -237,7 +237,7 @@ async def etiquetas(request: Request, at_id: int, u=Depends(usuario)):
 
 
 @router.post("/atendimentos/{at_id}/finalizar")
-def finalizar(at_id: int, avisar: str = Form(""), u=Depends(usuario)):
+def finalizar(at_id: int, avisar: str = Form(""), u=Depends(equipe)):
     with sessao() as s:
         at = _at(s, at_id)
         A.finalizar(s, rotas.servico, at, u["login"], avisar=bool(avisar))
@@ -246,7 +246,7 @@ def finalizar(at_id: int, avisar: str = Form(""), u=Depends(usuario)):
 
 # ------------------------------------------------------------------ painel em tempo real
 @router.get("/atendimentos/painel", response_class=HTMLResponse)
-def painel_tempo_real(request: Request, u=Depends(usuario)):
+def painel_tempo_real(request: Request, u=Depends(equipe)):
     agora = config.agora()
     hoje = datetime.combine(agora.date(), time())
     with sessao() as s:

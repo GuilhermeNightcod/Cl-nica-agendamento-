@@ -102,11 +102,36 @@ def usuario(request: Request) -> dict:
         if not cad or not cad.ativo:
             request.session.clear()
             raise Redirecionar("/entrar?" + urlencode({"erro": "Sua sessão foi encerrada. Entre novamente."}))
-        u = {"login": cad.login, "papel": cad.papel, "nome": cad.nome, "trocar_senha": cad.trocar_senha}
+        u = {"id": cad.id, "login": cad.login, "papel": cad.papel, "nome": cad.nome, "trocar_senha": cad.trocar_senha,
+             "turma": cad.turma, "dupla_id": cad.dupla_id}
     request.session["usuario"] = u
     if u["trocar_senha"] and request.url.path not in ("/minha-senha", "/sair"):
         raise Redirecionar("/minha-senha")
     return u
+
+
+def equipe(u: dict = Depends(usuario)) -> dict:
+    """Recepção e coordenação (alunos têm telas próprias em /aluno)."""
+    if u["papel"] == "aluno":
+        raise Redirecionar("/aluno")
+    return u
+
+
+def ids_da_dupla(u: dict) -> set[int]:
+    return {i for i in (u.get("id"), u.get("dupla_id")) if i}
+
+
+def pode_ver_paciente(s, u: dict, pid: int) -> bool:
+    """Equipe vê todos. Aluno só vê pacientes que têm (ou tiveram) consulta com a sua dupla."""
+    if u["papel"] != "aluno":
+        return True
+    ids = ids_da_dupla(u)
+    return bool(s.scalar(select(Agendamento.id).where(
+        Agendamento.paciente_id == pid, or_(Agendamento.aluno1_id.in_(ids), Agendamento.aluno2_id.in_(ids))).limit(1)))
+
+
+def ficha_de(u: dict, pid: int) -> str:
+    return f"/aluno/paciente/{pid}" if u["papel"] == "aluno" else f"/pacientes/{pid}"
 
 
 def coordenacao(u: dict = Depends(usuario)) -> dict:
@@ -149,11 +174,15 @@ def entrar(request: Request, login: str = Form(...), senha: str = Form(...), vol
             erro = str(e)
             u = None
         if u:
-            request.session["usuario"] = {"login": u.login, "papel": u.papel, "nome": u.nome, "trocar_senha": u.trocar_senha}
+            request.session["usuario"] = {"id": u.id, "login": u.login, "papel": u.papel, "nome": u.nome,
+                                          "trocar_senha": u.trocar_senha, "turma": u.turma, "dupla_id": u.dupla_id}
+            destino_padrao = "/aluno" if u.papel == "aluno" else "/agenda"
             s.add(RegistroAcesso(usuario=u.login, acao="entrou no sistema"))
     if not u:
         return ir("/entrar", erro=erro, voltar=voltar)
-    return ir(voltar if voltar.startswith("/") and not voltar.startswith("//") else "/agenda")
+    if voltar in ("", "/agenda") or not voltar.startswith("/") or voltar.startswith("//"):
+        voltar = destino_padrao
+    return ir(voltar)
 
 
 @router.get("/sair")
@@ -163,8 +192,9 @@ def sair(request: Request):
 
 
 @router.get("/")
-def inicio():
-    return ir("/agenda")
+def inicio(request: Request):
+    u = request.session.get("usuario") or {}
+    return ir("/aluno" if u.get("papel") == "aluno" else "/agenda")
 
 
 # ============================================================ utilidades
@@ -251,7 +281,7 @@ def _layout_dia(vagas: list[Vaga]) -> list[tuple[Vaga, int, int]]:
 
 
 @router.get("/agenda", response_class=HTMLResponse)
-def agenda(request: Request, semana: str = "", turma: str = "", professor: str = "", visao: str = "semana", u=Depends(usuario)):
+def agenda(request: Request, semana: str = "", turma: str = "", professor: str = "", visao: str = "semana", u=Depends(equipe)):
     ref = data_ou_none(semana) or config.agora().date()
     seg = segunda_da_semana(ref)
     dias_vistos = [ref] if visao == "dia" else [seg + timedelta(days=i) for i in range(6)]
@@ -289,7 +319,7 @@ def agenda(request: Request, semana: str = "", turma: str = "", professor: str =
 
 
 @router.get("/agenda/vaga/{vaga_id}", response_class=HTMLResponse)
-def ver_vaga(request: Request, vaga_id: int, busca: str = "", u=Depends(usuario)):
+def ver_vaga(request: Request, vaga_id: int, busca: str = "", u=Depends(equipe)):
     with sessao() as s:
         v = s.get(Vaga, vaga_id)
         if not v:
@@ -317,7 +347,7 @@ def agendar_na_vaga(
     avisar: str = Form(""),
     espera_id: str = Form(""),
     voltar: str = Form(""),
-    u=Depends(usuario),
+    u=Depends(equipe),
 ):
     voltar = voltar if voltar.startswith("/") else f"/agenda/vaga/{vaga_id}"
     with sessao() as s:
@@ -373,7 +403,7 @@ def agendar_na_vaga(
 
 
 @router.post("/agenda/agendamento/{ag_id}/status")
-def status_agendamento(ag_id: int, status: str = Form(...), voltar: str = Form(""), u=Depends(usuario)):
+def status_agendamento(ag_id: int, status: str = Form(...), voltar: str = Form(""), u=Depends(equipe)):
     with sessao() as s:
         ag = s.get(Agendamento, ag_id)
         if not ag:
@@ -385,7 +415,7 @@ def status_agendamento(ag_id: int, status: str = Form(...), voltar: str = Form("
 
 
 @router.post("/agenda/agendamento/{ag_id}/editar")
-def editar_agendamento(ag_id: int, aluno: str = Form(""), observacao: str = Form(""), hora: str = Form(""), u=Depends(usuario)):
+def editar_agendamento(ag_id: int, aluno: str = Form(""), observacao: str = Form(""), hora: str = Form(""), u=Depends(equipe)):
     with sessao() as s:
         ag = s.get(Agendamento, ag_id)
         if not ag:
@@ -397,7 +427,7 @@ def editar_agendamento(ag_id: int, aluno: str = Form(""), observacao: str = Form
 
 
 @router.post("/agenda/vaga/{vaga_id}/bloqueio")
-def bloquear_vaga(vaga_id: int, acao: str = Form(...), motivo: str = Form(""), u=Depends(usuario)):
+def bloquear_vaga(vaga_id: int, acao: str = Form(...), motivo: str = Form(""), u=Depends(equipe)):
     with sessao() as s:
         v = s.get(Vaga, vaga_id)
         if not v:
@@ -412,7 +442,7 @@ def bloquear_vaga(vaga_id: int, acao: str = Form(...), motivo: str = Form(""), u
 @router.get("/agendar", response_class=HTMLResponse)
 def encontrar_horario(
     request: Request, paciente_id: str = "", busca: str = "", procedimento: str = "", turma: str = "",
-    turno: str = "qualquer", espera_id: str = "", u=Depends(usuario),
+    turno: str = "qualquer", espera_id: str = "", u=Depends(equipe),
 ):
     with sessao() as s:
         p = s.get(Paciente, int(paciente_id)) if int_ou_none(paciente_id) else None
@@ -438,7 +468,7 @@ def encontrar_horario(
 
 # ============================================================ pacientes
 @router.get("/pacientes", response_class=HTMLResponse)
-def pacientes(request: Request, busca: str = "", u=Depends(usuario)):
+def pacientes(request: Request, busca: str = "", u=Depends(equipe)):
     with sessao() as s:
         lista = buscar_pacientes(s, busca, 100) if busca else list(
             s.scalars(select(Paciente).order_by(Paciente.criado_em.desc()).limit(50))
@@ -448,7 +478,7 @@ def pacientes(request: Request, busca: str = "", u=Depends(usuario)):
 
 
 @router.get("/pacientes/novo", response_class=HTMLResponse)
-def novo_paciente(request: Request, u=Depends(usuario)):
+def novo_paciente(request: Request, u=Depends(equipe)):
     return render(request, "paciente_form.html", p=None)
 
 
@@ -473,7 +503,7 @@ def _salvar_paciente(s, p: Paciente, nome, telefone, nascimento, cpf, numero_pro
 @router.post("/pacientes/novo")
 def criar_paciente(
     nome: str = Form(""), telefone: str = Form(""), nascimento: str = Form(""), cpf: str = Form(""),
-    numero_prontuario: str = Form(""), observacoes: str = Form(""), u=Depends(usuario),
+    numero_prontuario: str = Form(""), observacoes: str = Form(""), u=Depends(equipe),
 ):
     with sessao() as s:
         p = Paciente()
@@ -487,7 +517,7 @@ def criar_paciente(
 
 
 @router.get("/pacientes/{pid:int}", response_class=HTMLResponse)
-def ficha(request: Request, pid: int, u=Depends(usuario)):
+def ficha(request: Request, pid: int, u=Depends(equipe)):
     with sessao() as s:
         p = s.get(Paciente, pid)
         if not p:
@@ -530,14 +560,16 @@ def novo_registro_dente(
 ):
     validos = {str(n) for arc in DENTES_PERMANENTES + DENTES_DECIDUOS for n in arc} | set(REGIOES)
     if dente not in validos:
-        return ir(f"/pacientes/{pid}", erro="Escolha um dente ou região no odontograma.")
+        return ir(ficha_de(u, pid), erro="Escolha um dente ou região no odontograma.")
     with sessao() as s:
-        if not s.get(Paciente, pid):
+        if not s.get(Paciente, pid) or not pode_ver_paciente(s, u, pid):
             raise HTTPException(404)
+        if u["papel"] == "aluno" and not aluno.strip():
+            aluno = u["nome"]
         proc = s.get(Procedimento, int(procedimento[5:])) if procedimento.startswith("proc:") else None
         texto = (descricao.strip() or (proc.nome if proc else "")).strip()
         if not texto and status != "ausente":
-            return ir(f"/pacientes/{pid}", erro="Escolha o procedimento ou escreva a descrição.")
+            return ir(ficha_de(u, pid), erro="Escolha o procedimento ou escreva a descrição.")
         r = RegistroDente(
             paciente_id=pid, dente=dente, faces="".join(f for f in "MODVL" if f in faces), procedimento_id=proc.id if proc else None,
             descricao=texto or "Ausente", status=status if status in STATUS_DENTE else "aberto", anotacao=anotacao.strip() or None,
@@ -545,20 +577,20 @@ def novo_registro_dente(
         )
         s.add(r)
         registrar_acesso(s, u, "registrou no odontograma", pid, f"{r.local} {r.faces} {r.descricao}")
-    return RedirectResponse(f"/pacientes/{pid}?msg=Registrado+no+odontograma.#odontograma", status_code=303)
+    return RedirectResponse(f"{ficha_de(u, pid)}?msg=Registrado+no+odontograma.#odontograma", status_code=303)
 
 
 @router.post("/odontograma/{rid}/status")
 def status_registro_dente(rid: int, status: str = Form(...), u=Depends(usuario)):
     with sessao() as s:
         r = s.get(RegistroDente, rid)
-        if not r or status not in STATUS_DENTE:
+        if not r or status not in STATUS_DENTE or not pode_ver_paciente(s, u, r.paciente_id):
             raise HTTPException(404)
         r.status = status
         r.finalizado_em = config.agora() if status == "finalizado" else None
         registrar_acesso(s, u, f"odontograma: {status}", r.paciente_id, f"{r.local} {r.descricao}")
         pid = r.paciente_id
-    return RedirectResponse(f"/pacientes/{pid}#odontograma", status_code=303)
+    return RedirectResponse(f"{ficha_de(u, pid)}#odontograma", status_code=303)
 
 
 @router.post("/odontograma/{rid}/excluir")
@@ -572,13 +604,13 @@ def excluir_registro_dente(rid: int, u=Depends(usuario)):
         pid = r.paciente_id
         registrar_acesso(s, u, "excluiu do odontograma", pid, f"{r.local} {r.descricao}")
         s.delete(r)
-    return RedirectResponse(f"/pacientes/{pid}#odontograma", status_code=303)
+    return RedirectResponse(f"{ficha_de(u, pid)}#odontograma", status_code=303)
 
 
 @router.post("/pacientes/{pid:int}")
 def atualizar_paciente(
     pid: int, nome: str = Form(""), telefone: str = Form(""), nascimento: str = Form(""), cpf: str = Form(""),
-    numero_prontuario: str = Form(""), observacoes: str = Form(""), u=Depends(usuario),
+    numero_prontuario: str = Form(""), observacoes: str = Form(""), u=Depends(equipe),
 ):
     with sessao() as s:
         p = s.get(Paciente, pid)
@@ -593,7 +625,7 @@ def atualizar_paciente(
 @router.post("/pacientes/{pid}/documentos")
 async def enviar_documentos(
     pid: int, arquivos: list[UploadFile] = File(...), tipo: str = Form("outro"), data_documento: str = Form(""),
-    descricao: str = Form(""), u=Depends(usuario),
+    descricao: str = Form(""), u=Depends(equipe),
 ):
     pasta = Path(config.ARQUIVOS_DIR) / "prontuarios" / str(pid)
     pasta.mkdir(parents=True, exist_ok=True)
@@ -628,7 +660,7 @@ async def enviar_documentos(
 def ver_documento(doc_id: int, baixar: int = 0, u=Depends(usuario)):
     with sessao() as s:
         d = s.get(Documento, doc_id)
-        if not d:
+        if not d or not pode_ver_paciente(s, u, d.paciente_id):
             raise HTTPException(404)
         registrar_acesso(s, u, "viu documento", d.paciente_id, f"{d.tipo} #{d.id}")
         caminho = (Path(config.ARQUIVOS_DIR) / d.arquivo).resolve()
@@ -656,7 +688,7 @@ def excluir_documento(doc_id: int, u=Depends(coordenacao)):
 
 # ============================================================ lista de espera
 @router.get("/espera", response_class=HTMLResponse)
-def lista_espera(request: Request, area: str = "", u=Depends(usuario)):
+def lista_espera(request: Request, area: str = "", u=Depends(equipe)):
     with sessao() as s:
         q = select(ListaEspera).where(ListaEspera.status == "aguardando").order_by(ListaEspera.criado_em)
         if int_ou_none(area):
@@ -666,7 +698,7 @@ def lista_espera(request: Request, area: str = "", u=Depends(usuario)):
 
 
 @router.post("/espera/{item_id}/resolver")
-def espera_resolver(item_id: int, u=Depends(usuario)):
+def espera_resolver(item_id: int, u=Depends(equipe)):
     with sessao() as s:
         if item := s.get(ListaEspera, item_id):
             item.status = "atendido"
@@ -711,7 +743,7 @@ def _indicadores(s) -> dict:
 
 
 @router.get("/painel", response_class=HTMLResponse)
-def painel(request: Request, u=Depends(usuario)):
+def painel(request: Request, u=Depends(equipe)):
     with sessao() as s:
         agora = config.agora()
         humanos = s.scalars(select(Conversa).where(Conversa.atendimento_humano)).all()
@@ -728,7 +760,7 @@ def painel(request: Request, u=Depends(usuario)):
 
 
 @router.get("/exportar/agendamentos.csv")
-def exportar(u=Depends(usuario)):
+def exportar(u=Depends(equipe)):
     buf = io.StringIO()
     w = csv.writer(buf, delimiter=";")
     w.writerow(["data", "hora", "turma", "clinica", "professor", "procedimento", "paciente", "telefone",

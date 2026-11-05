@@ -1,0 +1,42 @@
+{% extends "base.html" %}{% block titulo %}Cadastrar turma de alunos{% endblock %}
+{% block cabeca %}<style>
+  @media print { .lateral, .nao-imprimir { display:none !important; } main.com-lateral { margin:0; } .caixa { border:0; padding:0; } }
+  .cartoes { display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:10px; }
+  .cartao-login { border:1px dashed #9fb5ae; border-radius:10px; padding:12px; break-inside:avoid; }
+  .cartao-login b { display:block; font-size:var(--t-md); }
+  .cartao-login dl { margin:6px 0 0; display:grid; grid-template-columns:auto 1fr; gap:2px 10px; font-size:var(--t-sm); }
+  .cartao-login dt { color:var(--suave); } .cartao-login dd { margin:0; font-weight:700; letter-spacing:.02em; }
+</style>{% endblock %}
+{% block conteudo %}
+<a class="voltar nao-imprimir" href="/usuarios">‹ Usuários</a>
+{% if criados is none %}
+<div class="caixa" style="max-width:760px">
+  <h1>Cadastrar turma de alunos</h1>
+  <p class="sub">Cole a lista de alunos, um nome por linha (pode copiar da planilha de chamada). O sistema cria o login de cada um e gera senhas provisórias para imprimir e entregar.</p>
+  <form method="post" action="/usuarios/importar">
+    <div style="margin-bottom:14px;max-width:280px"><label for="turma">Turma</label>
+      <select id="turma" name="turma" required><option value="">—</option>{% for t in turmas %}<option>{{ t }}</option>{% endfor %}</select></div>
+    <div style="margin-bottom:14px"><label for="nomes">Nomes dos alunos</label>
+      <textarea id="nomes" name="nomes" rows="14" placeholder="Ana Beatriz Souza&#10;Guilherme Silva&#10;Rafael Lima" required>{{ nomes or '' }}</textarea></div>
+    <button class="btn">Criar logins</button>
+  </form>
+</div>
+{% else %}
+<div class="caixa">
+  <div class="linha entre nao-imprimir" style="margin-bottom:10px">
+    <div><h1>{{ criados|length }} aluno{{ 's' if criados|length != 1 }} cadastrado{{ 's' if criados|length != 1 }} no {{ turma }}</h1>
+      <p class="sub" style="margin:0">Imprima e recorte os cartões. As senhas aparecem só agora. No primeiro acesso, cada aluno cria a própria senha.</p></div>
+    <button class="btn" type="button" onclick="window.print()">Imprimir cartões</button>
+  </div>
+  {% if pulados %}<div class="aviso alerta nao-imprimir">Já tinham login e foram ignorados: {{ pulados|join(', ') }}.</div>{% endif %}
+  <div class="cartoes">
+    {% for novo, senha in criados %}
+    <div class="cartao-login">
+      <b>{{ novo.nome }}</b><small>{{ novo.turma }}, Central Odonto</small>
+      <dl><dt>Site</dt><dd>{{ config.ENDERECO_SITE or request.base_url.hostname }}</dd><dt>Usuário</dt><dd>{{ novo.login }}</dd><dt>Senha</dt><dd>{{ senha }}</dd></dl>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

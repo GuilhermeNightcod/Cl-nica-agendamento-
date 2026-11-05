@@ -1,0 +1,49 @@
+{% extends "base.html" %}{% block titulo %}{{ ag.paciente.nome_exibicao }}{% endblock %}
+{% block conteudo %}
+{% set v = ag.vaga %}
+<div class="aluno-pag">
+  <a class="voltar" href="/aluno/vaga/{{ v.id }}">‹ {{ DIAS_SEMANA[v.inicio.weekday()] }} {{ v.inicio.strftime('%d/%m') }}</a>
+  <h1>{{ ag.paciente.nome_exibicao }}</h1>
+  <p class="sub" style="margin:0 0 14px">{{ DIAS_SEMANA[v.inicio.weekday()] }}, {{ v.inicio.strftime('%d/%m') }} às {{ ag.inicio.strftime('%H:%M') }}. <span class="tag {{ ag.status }}">{{ ag.status }}</span></p>
+  <a class="btn sec" href="/aluno/paciente/{{ ag.paciente.id }}" style="margin-bottom:16px">Ficha, odontograma e prontuário</a>
+
+  {% if ag.status != 'cancelado' %}
+  <div class="caixa" style="padding:14px 16px">
+    <h2>Presença</h2>
+    <div class="acoes-presenca">
+      {% for st, rot in [('compareceu','Veio'),('faltou','Faltou')] %}
+      <form method="post" action="/aluno/agendamento/{{ ag.id }}/status"><input type="hidden" name="status" value="{{ st }}"><button class="btn {{ '' if ag.status == st else 'sec' }}" style="width:100%">{{ rot }}</button></form>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if pode and ag.status in ('agendado', 'confirmado') %}
+  <form class="caixa" method="post" action="/aluno/agendamento/{{ ag.id }}" style="padding:14px 16px">
+    <h2>Alterar</h2>
+    <div class="campos">
+      <div><label>Horário de chegada</label><input type="time" name="hora" value="{{ ag.hora.strftime('%H:%M') if ag.hora else v.inicio.strftime('%H:%M') }}"></div>
+      <div><label>Procedimento</label>{% with selecionado=('proc:%d'|format(ag.procedimento_id) if ag.procedimento_id else 'esp:%d'|format(ag.especialidade_id or 0)), com_vazio=false, autoenviar=false %}{% include "_select_procedimento.html" %}{% endwith %}</div>
+      <div><label>Observação</label><input name="observacao" value="{{ ag.observacao or '' }}"></div>
+    </div>
+    <button class="btn grande">Salvar alterações</button>
+  </form>
+
+  <div class="caixa" style="padding:14px 16px">
+    <h2>Remarcar para outro dia</h2>
+    {% if outras %}<div class="lista-toque">
+      {% for o in outras %}
+      <form method="post" action="/aluno/agendamento/{{ ag.id }}/remarcar" class="linha entre" style="padding:10px 0;border-bottom:1px solid var(--linha);flex-wrap:nowrap">
+        <span><b>{{ DIAS_SEMANA[o.inicio.weekday()] }} {{ o.inicio.strftime('%d/%m') }}</b><small style="display:block">{{ o.sessao.nome }}, {{ o.livres }} vaga{{ 's' if o.livres != 1 }}</small></span>
+        <input type="hidden" name="vaga_id" value="{{ o.id }}"><button class="btn sec peq">Mover</button>
+      </form>
+      {% endfor %}</div>
+    {% else %}<p class="vazio" style="margin:0">Nenhum outro dia da sua turma com vaga para este procedimento nas próximas semanas.</p>{% endif %}
+  </div>
+
+  <form method="post" action="/aluno/agendamento/{{ ag.id }}/status" onsubmit="return confirm('Cancelar a consulta de {{ ag.paciente.nome_exibicao }}? A vaga fica livre para outra dupla.')">
+    <input type="hidden" name="status" value="cancelado"><button class="btn perigo grande">Cancelar consulta</button>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

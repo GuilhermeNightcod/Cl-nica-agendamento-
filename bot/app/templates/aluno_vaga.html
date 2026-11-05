@@ -1,0 +1,66 @@
+{% extends "base.html" %}{% block titulo %}{{ v.inicio.strftime('%d/%m') }}{% endblock %}
+{% block conteudo %}
+{% set se = v.sessao %}
+<div class="aluno-pag">
+  <a class="voltar" href="/aluno">‹ Minha agenda</a>
+  <h1>{{ DIAS_SEMANA[v.inicio.weekday()] }}, {{ v.inicio.strftime('%d/%m') }}</h1>
+  <p class="sub" style="margin:0 0 6px">Das {{ v.inicio.strftime('%H:%M') }} às {{ v.fim.strftime('%H:%M') }}, {{ se.professor }}</p>
+  <p class="suave" style="margin:0 0 14px;font-size:var(--t-sm)">{{ se.nome }}. Atende: {{ se.areas }}{% if se.faixa_etaria != 'Todas as idades' %} ({{ se.faixa_etaria|lower }}){% endif %}.</p>
+  {% if v.bloqueada %}<div class="aviso erro">Sem clínica neste dia: {{ v.motivo_bloqueio }}</div>{% endif %}
+
+  <div class="caixa" style="padding:14px 16px">
+    <div class="linha entre"><h2 style="margin:0">Meus pacientes neste dia</h2>
+      <span class="livres" style="color:{{ 'var(--erro)' if v.livres == 0 else 'var(--campo)' }}">{{ v.livres }} vaga{{ 's' if v.livres != 1 }} na turma</span></div>
+    <div class="lista-toque">
+      {% for a in meus %}
+      <a href="/aluno/agendamento/{{ a.id }}">
+        <span class="av">{{ a.paciente.nome_exibicao[:1] }}</span>
+        <span class="info"><b>{{ a.paciente.nome_exibicao }}</b><small>{{ a.hora.strftime('%H:%M') + ', ' if a.hora }}{{ a.descricao }}</small></span>
+        <span class="tag {{ a.status }}">{{ a.status }}</span>
+      </a>
+      {% else %}<p class="vazio" style="margin:10px 0 0">Nenhum paciente da sua dupla neste dia.</p>{% endfor %}
+    </div>
+  </div>
+
+  {% if pode and not v.bloqueada %}
+  <div class="caixa" style="padding:14px 16px" id="agendar">
+    <h2>Agendar paciente</h2>
+    {% if v.livres == 0 %}<div class="aviso alerta">Não há vagas neste dia. Para encaixe, fale com a recepção.</div>{% else %}
+    <form method="get" action="#agendar" class="linha" style="flex-wrap:nowrap;margin-bottom:10px">
+      <input name="busca" value="{{ busca }}" placeholder="Nome ou WhatsApp do paciente" aria-label="Buscar paciente" autocomplete="off">
+      <button class="btn sec">Buscar</button>
+    </form>
+    <form method="post" action="/aluno/vaga/{{ v.id }}/agendar">
+      {% if busca_curta %}<p class="suave" style="font-size:var(--t-sm)">Digite pelo menos 3 letras do nome (ou 4 números do WhatsApp) para buscar.</p>
+      {% elif busca %}
+        {% if resultados %}<div class="lista-toque" style="margin-bottom:12px">
+          {% for p in resultados %}<label class="opcao"><input type="radio" name="paciente_id" value="{{ p.id }}" {{ 'checked' if loop.first }} onchange="document.getElementById('novo').hidden=true">
+            <span class="info"><b>{{ p.nome_exibicao }}</b><small>{{ '%d anos'|format(p.idade()) if p.idade() is not none else 'idade não informada' }}{% if p.telefone %}, WhatsApp final {{ p.telefone[-4:] }}{% endif %}</small></span></label>{% endfor %}
+          <label class="opcao"><input type="radio" name="paciente_id" value="" onchange="document.getElementById('novo').hidden=false">
+            <span class="info"><b>Nenhum destes</b><small>É um paciente novo</small></span></label>
+        </div>
+        {% else %}<p class="vazio">Ninguém encontrado com “{{ busca }}”. Cadastre abaixo.</p>{% endif %}
+      {% endif %}
+      {% if not busca_curta %}
+      <div id="novo" {{ 'hidden' if resultados }}>
+      <h3>Paciente novo</h3>
+      <div class="campos">
+        <div><label>Nome completo</label><input name="novo_nome" value="{{ busca if busca and not busca[0].isdigit() }}"></div>
+        <div><label>WhatsApp (com DDD)</label><input name="novo_telefone" type="tel" inputmode="tel" placeholder="(11) 98888-7777"></div>
+        <div><label>Data de nascimento</label><input type="date" name="novo_nascimento"></div>
+      </div>
+      </div>
+      {% endif %}
+      <div class="campos">
+        <div><label>Procedimento</label>{% with selecionado='', com_vazio=false, autoenviar=false %}{% include "_select_procedimento.html" %}{% endwith %}</div>
+        <div><label>Horário de chegada</label><input type="time" name="hora" value="{{ v.inicio.strftime('%H:%M') }}" min="{{ v.inicio.strftime('%H:%M') }}" max="{{ v.fim.strftime('%H:%M') }}"></div>
+        <div><label>Observação (opcional)</label><input name="observacao"></div>
+      </div>
+      <label class="check" style="margin-bottom:14px"><input type="checkbox" name="avisar" value="1" checked> Avisar o paciente pelo WhatsApp</label>
+      <button class="btn grande">Agendar</button>
+    </form>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

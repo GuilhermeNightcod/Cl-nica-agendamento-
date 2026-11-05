@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 from . import config
 from .models import Usuario
 
-PAPEIS = {"recepcao": "Recepção", "coordenacao": "Coordenação"}
+PAPEIS = {"recepcao": "Recepção", "coordenacao": "Coordenação", "aluno": "Aluno"}
 TENTATIVAS_MAX = 5
 BLOQUEIO = timedelta(minutes=15)
 SENHA_MIN = 8
@@ -62,7 +62,7 @@ def normalizar_login(login: str) -> str:
 
 
 def criar(s: Session, login: str, nome: str, papel: str, senha: str | None = None, criado_por: str | None = None,
-          trocar_senha: bool = True) -> tuple[Usuario, str]:
+          trocar_senha: bool = True, turma: str | None = None) -> tuple[Usuario, str]:
     login = normalizar_login(login)
     if s.scalar(select(Usuario).where(Usuario.login == login)):
         raise ErroUsuario(f"Já existe o usuário “{login}”.")
@@ -70,9 +70,12 @@ def criar(s: Session, login: str, nome: str, papel: str, senha: str | None = Non
         raise ErroUsuario("Papel inválido.")
     if not nome.strip():
         raise ErroUsuario("Informe o nome da pessoa.")
+    if papel == "aluno" and not (turma or "").strip():
+        raise ErroUsuario("Informe a turma do aluno.")
     senha = senha or senha_provisoria()
     u = Usuario(login=login, nome=" ".join(nome.split())[:120], papel=papel, senha_hash=gerar_hash(senha),
-                trocar_senha=trocar_senha, criado_por=criado_por, ativo=True, tentativas_falhas=0)
+                trocar_senha=trocar_senha, criado_por=criado_por, ativo=True, tentativas_falhas=0,
+                turma=(turma or "").strip() or None if papel == "aluno" else None)
     s.add(u)
     s.flush()
     return u, senha
@@ -113,3 +116,16 @@ def criar_iniciais(s: Session) -> int:
         except ErroUsuario:
             continue
     return n
+
+
+def login_sugerido(s: Session, nome: str) -> str:
+    """'Maria da Silva Souza' -> 'maria.souza' (com número se já existir)."""
+    import unicodedata
+
+    t = unicodedata.normalize("NFKD", nome).encode("ascii", "ignore").decode().lower()
+    partes = [p for p in re.split(r"[^a-z0-9]+", t) if p and p not in ("da", "de", "do", "das", "dos", "e")]
+    base = ".".join([partes[0], partes[-1]] if len(partes) > 1 else partes[:1]) or "aluno"
+    base, n, login = base[:36], 2, base[:36]
+    while s.scalar(select(Usuario).where(Usuario.login == login)):
+        login, n = f"{base}{n}", n + 1
+    return login

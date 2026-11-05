@@ -1,0 +1,21 @@
+<style>
+  .seg-tabs { display:inline-flex; background:var(--cinza); border-radius:8px; padding:3px; }
+  .seg-tabs button { border:0; background:none; padding:6px 14px; border-radius:6px; font:inherit; font-size:13px; cursor:pointer; color:var(--suave); }
+  .seg-tabs button.ativa { background:var(--azul); color:#fff; }
+  .arcadas { overflow-x:auto; padding:6px 0; }
+  .arcada { display:flex; justify-content:center; gap:0; }
+  .arcada.sup { border-bottom:1px dashed var(--borda); padding-bottom:6px; margin-bottom:6px; }
+  .arcada .lado { display:flex; gap:2px; padding:0 8px; }
+  .arcada .lado:first-child { border-right:1px dashed var(--borda); }
+  .dente { border:1px solid transparent; background:none; display:flex; flex-direction:column; align-items:center; gap:3px; padding:4px 2px; border-radius:8px; cursor:pointer; width:44px; font:inherit; }
+  .dente:hover { background:var(--azul-claro); } .dente.sel { border-color:var(--azul); background:var(--azul-claro); }
+  .dente .num { font-size:12px; color:var(--suave); position:relative; font-weight:600; }
+  .dente .num.aberto-n { color:#e67700; }
+  .nota { color:#7048e8; font-weight:800; position:absolute; right:-7px; top:-2px; font-size:12px; }
+  .regioes { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin:12px 0 8px; }
+  .chip { border:1px solid var(--borda); background:#fff; border-radius:99px; padding:5px 14px; font:inherit; font-size:13px; cursor:pointer; }
+  .chip.tem { border-color:#f59f00; } .chip.sel { background:var(--azul-claro); border-color:var(--azul); }
+  .legenda-odo { display:flex; gap:16px; justify-content:center; flex-wrap:wrap; font-size:12.5px; border-top:1px solid var(--borda); padding-top:10px; }
+  .legenda-odo i { display:inline-block; width:14px; height:14px; border:1.5px solid; border-radius:3px; vertical-align:-2px; margin-right:5px; }
+  .registro-dente { margin-top:14px; border:1px solid var(--azul); border-radius:10px; padding:14px; background:#f8fbff; }
+</style>

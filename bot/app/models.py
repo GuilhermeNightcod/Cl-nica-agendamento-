@@ -211,9 +211,11 @@ class Agendamento(Base):
     procedimento_id: Mapped[int | None] = mapped_column(ForeignKey("procedimentos.id"))
     queixa: Mapped[str | None] = mapped_column(Text)
     observacao: Mapped[str | None] = mapped_column(Text)
-    aluno: Mapped[str | None] = mapped_column(String(120))
+    aluno: Mapped[str | None] = mapped_column(String(120))  # nomes da dupla (texto livre)
+    aluno1_id: Mapped[int | None] = mapped_column(ForeignKey("usuarios.id"), index=True)  # dupla responsável
+    aluno2_id: Mapped[int | None] = mapped_column(ForeignKey("usuarios.id"), index=True)
     hora: Mapped[time | None] = mapped_column(Time)  # horário de chegada do paciente (opcional)
-    origem: Mapped[str] = mapped_column(String(20), default="bot")  # bot | recepcao
+    origem: Mapped[str] = mapped_column(String(20), default="bot")  # bot | recepcao | aluno
     criado_por: Mapped[str | None] = mapped_column(String(60))
     # agendado | confirmado | cancelado | compareceu | faltou
     status: Mapped[str] = mapped_column(String(20), default="agendado", index=True)
@@ -288,7 +290,9 @@ class Usuario(Base):
     login: Mapped[str] = mapped_column(String(40), unique=True, index=True)
     nome: Mapped[str] = mapped_column(String(120))
     senha_hash: Mapped[str] = mapped_column(String(300))
-    papel: Mapped[str] = mapped_column(String(20), default="recepcao")  # recepcao | coordenacao
+    papel: Mapped[str] = mapped_column(String(20), default="recepcao")  # recepcao | coordenacao | aluno
+    turma: Mapped[str | None] = mapped_column(String(40))  # só para aluno: "8º semestre"
+    dupla_id: Mapped[int | None] = mapped_column(ForeignKey("usuarios.id"))  # colega de dupla (aluno)
     ativo: Mapped[bool] = mapped_column(Boolean, default=True)
     trocar_senha: Mapped[bool] = mapped_column(Boolean, default=True)  # senha provisória
     tentativas_falhas: Mapped[int] = mapped_column(Integer, default=0)
@@ -299,7 +303,7 @@ class Usuario(Base):
 
     @property
     def papel_nome(self) -> str:
-        return "Coordenação" if self.papel == "coordenacao" else "Recepção"
+        return {"coordenacao": "Coordenação", "aluno": "Aluno"}.get(self.papel, "Recepção")
 
 
 class RegistroAcesso(Base):
