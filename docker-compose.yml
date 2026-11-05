@@ -1,10 +1,11 @@
 # Central Inteligente de Atendimento Odontológico
 # Sobe tudo com:   docker compose up -d
 #
-#  bot        -> sistema da clínica (agenda, pacientes, prontuário, WhatsApp)   http://localhost:8000
-#  chatwoot   -> caixa de atendimento humano (código aberto, MIT)      http://localhost:3000
-#  postgres   -> banco de dados (um banco para o bot, outro para o Chatwoot)
-#  redis      -> fila interna do Chatwoot
+#  bot        -> sistema da clínica (agenda, atendimentos WhatsApp, pacientes, odontograma)  http://localhost:8000
+#  postgres   -> banco de dados
+#
+#  Opcional: Chatwoot (outra caixa de atendimento). O sistema já tem a sua própria.
+#  Para ligar:  docker compose --profile chatwoot up -d
 
 x-chatwoot-env: &chatwoot-env
   RAILS_ENV: production
@@ -40,6 +41,7 @@ services:
 
   redis:
     image: redis:7-alpine
+    profiles: ["chatwoot"]
     restart: unless-stopped
     volumes:
       - redis_dados:/data
@@ -63,6 +65,7 @@ services:
 
   chatwoot:
     image: chatwoot/chatwoot:${CHATWOOT_VERSAO:-v4.19.1-ce}
+    profiles: ["chatwoot"]
     restart: unless-stopped
     environment: *chatwoot-env
     entrypoint: docker/entrypoints/rails.sh
@@ -79,6 +82,7 @@ services:
 
   chatwoot-worker:
     image: chatwoot/chatwoot:${CHATWOOT_VERSAO:-v4.19.1-ce}
+    profiles: ["chatwoot"]
     restart: unless-stopped
     environment: *chatwoot-env
     command: bundle exec sidekiq -C config/sidekiq.yml

@@ -93,7 +93,8 @@ async def webhook_chatwoot(request: Request, token: str = ""):
 
 
 # ------------------------------------------------------------------ Sistema da clínica
-from .web import rotas  # noqa: E402
+from .web import atendimento_rotas, rotas  # noqa: E402
 
 rotas.servico = servico
+app.include_router(atendimento_rotas.router)
 app.include_router(rotas.router)

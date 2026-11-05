@@ -1,0 +1,24 @@
+{% set cores_av = ['#e8590c','#3b5bdb','#0ca678','#1098ad','#7048e8','#d6336c','#2f9e44','#f08c00'] %}
+{% for it in itens %}
+  {% set p = it.p %}{% set at = it.at %}
+  <a class="item {{ 'sel' if selecionado == p.id }} {{ 'urg' if at and at.urgente }}" href="/atendimentos?aba={{ aba }}&p={{ p.id }}&busca={{ busca|urlencode }}&setor={{ setor }}&etiqueta={{ etiqueta }}&agente={{ agente }}">
+    <span class="av" style="background:{{ cores_av[p.id % 8] }}">{{ p.nome_exibicao[:1]|upper }}</span>
+    <span class="meio">
+      <span class="l1"><b>{{ p.nome_exibicao }}</b><small>{{ it.quando|ha_quanto }}</small></span>
+      <span class="l2">
+        <span class="prev">{% if it.ultima %}{% if it.ultima.direcao == 'saida' %}{{ '🤖 ' if it.ultima.autor == 'bot' else '↩ ' }}{% endif %}{{ it.ultima.conteudo[:70] }}{% endif %}</span>
+        {% if at and at.nao_lidas %}<span class="naolidas">{{ at.nao_lidas }}</span>{% endif %}
+        {% if at and at.assumido_por %}<span class="ag" title="com {{ at.assumido_por }}">{{ at.assumido_por[:1]|upper }}</span>{% endif %}
+        {% if at and at.setor %}<span class="pt" style="background:{{ at.setor.cor }}" title="{{ at.setor.nome }}"></span>{% endif %}
+      </span>
+      {% if at and (at.etiquetas or at.urgente) %}<span class="tags">{% if at.urgente %}<i style="background:#b42318" title="Urgente"></i>{% endif %}{% for e in at.etiquetas %}<i style="background:{{ e.cor }}" title="{{ e.nome }}"></i>{% endfor %}</span>{% endif %}
+      {% if not at %}<span class="l2"><small class="suave">🤖 com o bot · etapa: {{ it.estado }}</small></span>{% endif %}
+    </span>
+  </a>
+{% else %}
+  <div class="vazio-lista">
+    <div style="font-size:40px">📭</div>
+    {% if aba == 'fila' %}Ninguém aguardando atendimento.{% else %}Não encontramos nenhum resultado.{% endif %}
+  </div>
+{% endfor %}
+<script>window.__contagens = {{ contagens|tojson }};</script>

@@ -40,8 +40,8 @@ def enviar_lembretes(s, servico) -> int:
         #    {{3}} às {{4}}. Você confirma presença?"   [Confirmo] [Remarcar]
         msg = Modelo(
             config.TEMPLATE_LEMBRETE,
-            [primeiro_nome(p) or "paciente", ag.descricao, fmt_data(v.inicio), fmt_hora(v.inicio)],
-            texto_resumo=f"Lembrete {ag.descricao} {fmt_data(v.inicio)} {fmt_hora(v.inicio)}",
+            [primeiro_nome(p) or "paciente", ag.descricao, fmt_data(ag.inicio), fmt_hora(ag.inicio)],
+            texto_resumo=f"Lembrete {ag.descricao} {fmt_data(ag.inicio)} {fmt_hora(ag.inicio)}",
             payloads_botoes=[f"confirma:{ag.id}", f"remarca:{ag.id}"],
         )
         servico.enviar(p.telefone, [msg])

@@ -40,6 +40,13 @@ class Servico:
         self.enviar(e.telefone, res.respostas)
         p = s.scalar(select(Paciente).where(Paciente.telefone == e.telefone))
         if res.chamar_humano:
+            from . import atendimentos
+
+            at = atendimentos.abrir(s, p, res.chamar_humano, urgente=res.urgente)
+            # liga ao atendimento as mensagens desta troca (a do paciente e a resposta do bot)
+            for m in s.scalars(select(Mensagem).where(Mensagem.paciente_id == p.id, Mensagem.atendimento_id.is_(None))
+                               .order_by(Mensagem.id.desc()).limit(1 + len(res.respostas))):
+                m.atendimento_id = at.id
             self._abrir_humano(s, p, res.chamar_humano)
         elif res.repassar_para_humano and self.chatwoot and p.conversa.chatwoot_conversa_id:
             try:
@@ -49,8 +56,7 @@ class Servico:
         return res
 
     def _abrir_humano(self, s: Session, p: Paciente, motivo: str) -> None:
-        if not self.chatwoot:
-            log.warning("Paciente %s aguardando humano (Chatwoot não configurado): %s", p.telefone, motivo)
+        if not self.chatwoot:  # Chatwoot é opcional: a caixa de atendimento do próprio sistema já recebe
             return
         historico = s.scalars(
             select(Mensagem).where(Mensagem.paciente_id == p.id).order_by(Mensagem.id.desc()).limit(12)
@@ -86,12 +92,12 @@ class Servico:
         if dentro_24h:
             from . import textos as T
 
-            msg = Texto(T.AGENDAMENTO_OK.format(especialidade=ag.descricao, data=fmt_data(v.inicio), hora=fmt_hora(v.inicio)))
+            msg = Texto(T.AGENDAMENTO_OK.format(especialidade=ag.descricao, data=fmt_data(ag.inicio), hora=fmt_hora(ag.inicio)))
         elif config.TEMPLATE_AGENDAMENTO:
             msg = Modelo(
                 config.TEMPLATE_AGENDAMENTO,
-                [(p.nome or p.nome_perfil or "paciente").split()[0], ag.descricao, fmt_data(v.inicio), fmt_hora(v.inicio)],
-                texto_resumo=f"Agendamento {ag.descricao} {fmt_data(v.inicio)} {fmt_hora(v.inicio)}",
+                [(p.nome or p.nome_perfil or "paciente").split()[0], ag.descricao, fmt_data(ag.inicio), fmt_hora(ag.inicio)],
+                texto_resumo=f"Agendamento {ag.descricao} {fmt_data(ag.inicio)} {fmt_hora(ag.inicio)}",
             )
         else:
             return "Agendado. O paciente receberá o lembrete automático antes da consulta."
@@ -119,17 +125,17 @@ class Servico:
                 return
             conv.atendimento_humano = True  # atendente assumiu a conversa
             conv.estado = "humano"
-            registrar(s, p, "saida", f"[atendente] {texto}")
+            from . import atendimentos
+
+            registrar(s, p, "saida", texto, autor="chatwoot")
+            if at := atendimentos.aberto_do_paciente(s, p.id):
+                atendimentos.assumir(at, "chatwoot")
             self.enviar(p.telefone, [Texto(texto)])
 
         elif tipo == "conversation_status_changed":
             status = evento.get("status") or conv_cw.get("status")
             if status == "resolved" and conv.atendimento_humano:
-                conv.atendimento_humano = False
-                conv.motivo_humano = None
-                conv.estado = "inicio"
-                conv.contexto = {}
-                from . import textos as T
+                from . import atendimentos
 
-                registrar(s, p, "saida", resumo(Texto(T.ATENDIMENTO_ENCERRADO)))
-                self.enviar(p.telefone, [Texto(T.ATENDIMENTO_ENCERRADO)])
+                at = atendimentos.aberto_do_paciente(s, p.id) or atendimentos.abrir(s, p, "Chatwoot")
+                atendimentos.finalizar(s, self, at, "chatwoot")

@@ -1,8 +1,10 @@
 # 🦷 Central Inteligente de Atendimento Odontológico
 
 Sistema da **clínica-escola de Odontologia**: agenda por **turma, dia de clínica, professor e
-procedimento**, cadastro de pacientes com **prontuário físico digitalizado**, e atendimento
-automático pelo **WhatsApp (API oficial da Meta)** com lembretes para não perder pacientes.
+procedimento**, **central de atendimentos do WhatsApp** (bot + fila humana), cadastro de pacientes com
+**odontograma** e **prontuário físico digitalizado**, e lembretes automáticos para não perder pacientes.
+
+![Agenda](docs/telas/agenda.png)
 
 > Este README foi escrito para quem **não programa**. A parte técnica para o
 > programador está em [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md).
@@ -14,7 +16,8 @@ automático pelo **WhatsApp (API oficial da Meta)** com lembretes para não perd
 ```
 TURMA (6º, 8º, 10º semestre)
   └─ CLÍNICA = um horário fixo da semana
-       ex.: 8º semestre · Terça 08:00–12:00 · Profª Jhennifer
+       ex.: 8º semestre · Terça 19:00–22:00 · Jhenifer Pinheiro
+            Clínica Integrada de Assistência Odontológica III (3878596)
             Áreas: Triagem/Anamnese + Endodontia
             Procedimentos: anamnese, capeamento pulpar e acesso
             10 pacientes por dia · qualquer idade
@@ -24,8 +27,7 @@ TURMA (6º, 8º, 10º semestre)
 PACIENTE → ficha + nº do prontuário físico + fotos/PDF das folhas do prontuário
 ```
 
-Cada clínica pode ter **faixa etária**: Hebiatria só aceita adolescentes (10 a 19 anos) e
-Odontopediatria só aceita crianças (até 12 anos). O sistema e o bot só oferecem a clínica certa para a idade do paciente.
+Cada clínica pode ter **faixa etária**: Adolescente (10 a 19 anos), Criança (até 12) e Idoso (60+). O sistema e o bot só oferecem a clínica certa para a idade do paciente.
 
 ---
 
@@ -33,13 +35,33 @@ Odontopediatria só aceita crianças (até 12 anos). O sistema e o bot só ofere
 
 | Tela | Para quem | O que faz |
 |---|---|---|
-| **Agenda** | Recepção | Semana com todas as clínicas das turmas, ocupação e pacientes. Clique num dia para ver a lista, marcar **Veio/Faltou**, anotar o **aluno**, fazer **encaixe** ou **bloquear o dia** (professor ausente, prova...) |
+| **Atendimentos** | Recepção | Caixa de entrada do WhatsApp: abas **Fila / Meus / Em atendimento / Com o bot / Finalizados**, **pegar próximo da fila**, setores, etiquetas, filtros, busca por mensagem e painel **Tempo real** (TME/TMA) |
+| **Agenda** | Recepção | Grade de horários (semana ou dia) com as clínicas das turmas lado a lado, horário de cada paciente, filtro por professor e turma. Clique num dia para ver a lista, marcar **Veio/Faltou**, anotar o **aluno**, fazer **encaixe** ou **bloquear o dia** (professor ausente, prova...) |
 | **Agendar** | Recepção | Escolha o paciente e o procedimento: o sistema mostra **só as clínicas que fazem esse procedimento**, com vaga e na idade certa |
-| **Pacientes** | Recepção | Busca por nome, telefone, CPF ou **nº do prontuário físico**. A ficha tem os dados, o histórico de consultas e o **prontuário digitalizado** |
+| **Pacientes** | Recepção | Busca por nome, telefone, CPF ou **nº do prontuário físico**. A ficha tem os dados, as consultas, o **odontograma** e o **prontuário digitalizado** |
 | **Lista de espera** | Recepção | Quem não encontrou vaga, com botão para agendar quando abrir |
 | **Indicadores** | Coordenação | Novos pacientes, % que agendou, faltas, ocupação de cada clínica, pacientes de dias bloqueados para remarcar, conversas abandonadas no WhatsApp |
 | **Clínicas** | Coordenação | Cadastrar e editar os dias de clínica de cada turma. Ao salvar, a agenda do semestre é refeita |
 | **Acessos** | Coordenação | Quem abriu fichas, viu documentos ou mudou dados (LGPD) |
+
+### Atendimentos (WhatsApp) 💬
+Quando o bot detecta urgência ou o paciente pede um atendente, a conversa entra na **fila** do setor
+(Urgência vai primeiro). A recepção clica em **Pegar próximo da fila**, conversa, coloca **etiquetas**,
+**transfere** de setor e **finaliza**; aí o bot volta a atender aquele paciente. A tela se atualiza
+sozinha a cada 5 segundos. Também dá para **assumir uma conversa que está com o bot** ou iniciar uma
+pela ficha do paciente.
+
+> Regra do WhatsApp: 24h depois da última mensagem do paciente só é possível enviar um **modelo aprovado**
+> (`TEMPLATE_CONTATO`). O sistema avisa e mostra o botão.
+
+![Atendimentos](docs/telas/atendimentos.png)
+
+### Odontograma 🦷
+Na ficha do paciente: dentes **permanentes e decíduos** (numeração FDI), clique no dente, escolha o
+procedimento, as **faces** (M O D V L), o status (**em tratamento**, **finalizado**, **já existente**,
+**ausente**), o aluno e uma anotação. Também registra por região (maxila, arcadas...).
+
+![Odontograma](docs/telas/odontograma.png)
 
 ### Prontuário digitalizado 📁
 Na ficha do paciente, clique em **"Escolher arquivos"**. **No celular, isso abre a câmera:** fotografe
@@ -56,7 +78,7 @@ Aceita JPG, PNG e PDF.
 | Resposta imediata + aviso LGPD | Boas-vindas e menu; o paciente concorda antes de informar dados |
 | Agendamento | Nome → nascimento → motivo → área → turno → horário (só clínicas da idade do paciente) |
 | Urgência | "rosto inchado", "dor muito forte", "não para de sangrar"... chamam um humano |
-| Atendimento humano | A conversa vai para o **Chatwoot**, onde a recepção responde |
+| Atendimento humano | A conversa vai para a **fila** da tela Atendimentos |
 | Lembrete | 24h antes, com botões **Confirmo** / **Remarcar** |
 | Recuperação | Quem parou no meio do agendamento recebe um "quer continuar?" |
 | Agendado pela recepção | O paciente pode ser avisado pelo WhatsApp (caixa "Avisar o paciente") |
@@ -77,8 +99,9 @@ Aceita JPG, PNG e PDF.
 A grade inicial das turmas vem de `bot/dados/sessoes_clinica.csv` e só é importada **na primeira vez**.
 Depois disso, use a tela **Clínicas**.
 
-> ⚠️ A grade de exemplo tem o **8º semestre** conforme informado. Os horários (08:00–12:00), os professores
-> "A definir" e as turmas do **6º e 10º** (marcadas "EXEMPLO - ajustar") **precisam ser corrigidos**.
+> ✅ A grade vem da **Grade 2026.2 Odonto Noturno** (6º, 8º e 10º semestre, só as disciplinas em
+> CLÍNICA/ODONTOCASE; pré-clínica, teoria e estágios em campo externo não recebem pacientes).
+> ⚠️ Confira: o **horário 19:00–22:00**, as **10 vagas** por clínica e as **áreas** de cada disciplina foram estimados.
 
 > 💡 Ao salvar um CSV no Excel, escolha **"CSV UTF-8"** para os acentos não quebrarem.
 
@@ -90,7 +113,7 @@ Depois disso, use a tela **Clínicas**.
 |---|---|---|
 | Python + FastAPI | sistema da clínica e bot | MIT/BSD ✅ |
 | PostgreSQL | banco de dados | PostgreSQL (livre) ✅ |
-| Chatwoot (edição *Community*) | caixa de atendimento humano do WhatsApp | MIT ✅ |
+| Chatwoot (edição *Community*) — **opcional** | outra caixa de atendimento, se preferirem | MIT ✅ |
 | Redis | fila interna do Chatwoot | BSD/RSAL (uso interno ok) ✅ |
 | Cloudflared | endereço público temporário para testes | Apache 2.0 ✅ |
 
@@ -127,7 +150,10 @@ docker compose up -d
 - Sistema da clínica: <http://localhost:8000> (usuários e senhas do `.env`)
 - Chatwoot: <http://localhost:3000> (na primeira vez ele pede para criar o usuário administrador; demora cerca de 1 minuto para abrir)
 
-### Passo 4: ligar o Chatwoot ao bot
+### Passo 4 (opcional): ligar o Chatwoot
+> Não é necessário: o sistema já tem a tela **Atendimentos**. Só use se quiserem o Chatwoot.
+> Suba com `docker compose --profile chatwoot up -d`.
+
 1. No Chatwoot: **Configurações → Caixas de entrada → Adicionar → API**.
    - Nome: `WhatsApp Clínica`
    - **URL do Webhook:** `http://bot:8000/chatwoot/webhook?token=SEU_CHATWOOT_WEBHOOK_TOKEN`

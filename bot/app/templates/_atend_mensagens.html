@@ -1,0 +1,11 @@
+{% if cp %}
+{% set ultimo_dia = namespace(v=None) %}
+{% for m in msgs %}
+  {% if m.criado_em.date() != ultimo_dia.v %}{% set ultimo_dia.v = m.criado_em.date() %}<div class="dia-sep"><span>{{ m.criado_em.strftime('%d/%m/%Y') }}</span></div>{% endif %}
+  <div class="msg {{ 'm-ent' if m.direcao == 'entrada' else ('m-bot' if m.autor == 'bot' else 'm-ag') }}">
+    {% if m.direcao == 'saida' %}<div class="autor">{{ '🤖 Bot' if m.autor == 'bot' else (m.autor or 'Sistema') }}</div>{% endif %}
+    <div class="txt">{{ m.conteudo }}</div>
+    <div class="hora">{{ m.criado_em.strftime('%H:%M') }}</div>
+  </div>
+{% endfor %}
+{% endif %}

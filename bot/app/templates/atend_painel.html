@@ -1,0 +1,30 @@
+{% extends "base.html" %}{% block titulo %}Atendimento em tempo real{% endblock %}
+{% block cabeca %}<meta http-equiv="refresh" content="30">{% endblock %}
+{% block conteudo %}
+<p><a href="/atendimentos">← atendimentos</a></p>
+<div class="linha entre" style="margin-bottom:12px">
+  <div><h1>Tempo real</h1><p class="sub" style="margin:0">Atendimentos de hoje · atualiza a cada 30 segundos · {{ agora.strftime('%H:%M') }}</p></div>
+</div>
+<div class="caixa tabela">
+  <h2>Por setor</h2>
+  <table>
+    <tr><th>Setor</th><th>Aguardando</th><th>Maior espera agora</th><th>Tempo médio de espera (TME)</th><th>Em atendimento</th><th>Tempo médio de atendimento (TMA)</th><th>Finalizados hoje</th></tr>
+    {% for st, l in por_setor %}
+    <tr><td><span class="tag" style="background:{{ st.cor if st else '#999' }}22;color:{{ st.cor if st else '#555' }}">{{ st.nome if st else 'Sem setor' }}</span></td>
+      <td><b>{{ l.aguardando }}</b></td><td>{{ l.maior_espera|duracao }}</td><td>{{ l.tme|duracao }}</td>
+      <td>{{ l.em_atendimento }}</td><td>{{ l.tma|duracao }}</td><td>{{ l.finalizados }}</td></tr>
+    {% endfor %}
+    <tr style="font-weight:600"><td>Total</td><td>{{ total.aguardando }}</td><td>{{ total.maior_espera|duracao }}</td><td>{{ total.tme|duracao }}</td>
+      <td>{{ total.em_atendimento }}</td><td>{{ total.tma|duracao }}</td><td>{{ total.finalizados }}</td></tr>
+  </table>
+</div>
+<div class="caixa tabela">
+  <h2>Por atendente</h2>
+  <table>
+    <tr><th>Atendente</th><th>Em atendimento agora</th><th>Finalizados hoje</th><th>TMA</th></tr>
+    {% for ag, l in por_agente %}<tr><td>{{ ag }}</td><td>{{ l.em_atendimento }}</td><td>{{ l.finalizados }}</td><td>{{ l.tma|duracao }}</td></tr>
+    {% else %}<tr><td class="vazio" colspan="4">Nenhum atendimento hoje.</td></tr>{% endfor %}
+  </table>
+</div>
+<p class="suave" style="font-size:13px">TME = tempo entre o paciente entrar na fila e alguém assumir. TMA = tempo entre assumir e finalizar.</p>
+{% endblock %}

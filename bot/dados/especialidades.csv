@@ -1,9 +1,12 @@
 codigo;nome;descricao;ativa;mostrar_no_bot
 triagem;Triagem / Anamnese;Primeira consulta: avaliação e encaminhamento;sim;sim
+estomatologia;Estomatologia / Biópsia;Feridas, manchas ou caroços na boca;sim;sim
 clinica_geral;Clínica Geral;Limpeza, restaurações e procedimentos gerais;sim;sim
 endodontia;Endodontia;Tratamento de canal;sim;sim
 periodontia;Periodontia;Tratamento de gengiva;sim;sim
-protese;Prótese;Dentaduras, coroas e pontes;sim;sim
+protese;Prótese / Reabilitação;Dentaduras, coroas e pontes;sim;sim
 cirurgia;Cirurgia;Extrações e pequenas cirurgias;sim;sim
 odontopediatria;Odontopediatria;Atendimento para crianças;sim;sim
-hebiatria;Hebiatria;Atendimento para adolescentes;sim;sim
+hebiatria;Adolescente (Hebiatria);Atendimento para adolescentes;sim;sim
+geriatria;Idoso (Odontogeriatria);Atendimento para pessoas idosas;sim;sim
+pcd;Pessoa com Deficiência;Atendimento para pessoas com deficiência;sim;sim

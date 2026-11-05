@@ -18,7 +18,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from .agenda import gerar_vagas
-from .models import Especialidade, Procedimento, SessaoClinica
+from .models import Especialidade, Etiqueta, Procedimento, SessaoClinica, Setor
 
 log = logging.getLogger("dados")
 PASTA = Path(__file__).resolve().parent.parent / "dados"
@@ -71,6 +71,21 @@ def carregar(s: Session) -> dict:
         if e and (e.id, l["procedimento"].lower()) not in existentes:
             s.add(Procedimento(especialidade_id=e.id, nome=l["procedimento"]))
             existentes.add((e.id, l["procedimento"].lower()))
+
+    setores = {x.nome: x for x in s.scalars(select(Setor))}
+    for l in _ler("setores.csv"):
+        x = setores.get(l["nome"]) or Setor(nome=l["nome"])
+        x.cor = l.get("cor") or x.cor or "#0f5c8c"
+        x.padrao = l.get("padrao", "nao").lower() not in NAO
+        s.add(x)
+        setores[x.nome] = x
+    if not setores:
+        s.add(Setor(nome="Recepção", padrao=True))
+    etiquetas = {x.nome for x in s.scalars(select(Etiqueta))}
+    for l in _ler("etiquetas.csv"):
+        if l["nome"] not in etiquetas:
+            s.add(Etiqueta(nome=l["nome"], cor=l.get("cor") or "#6b7280"))
+            etiquetas.add(l["nome"])
 
     importadas = 0
     if not s.scalar(select(func.count(SessaoClinica.id))):

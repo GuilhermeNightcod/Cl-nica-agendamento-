@@ -1,0 +1,174 @@
+{% extends "base.html" %}{% block titulo %}Atendimentos{% endblock %}{% block main_classe %}largo sem-margem{% endblock %}
+{% block cabeca %}<style>
+  main.sem-margem { padding:0; }
+  .caixa-at { display:grid; grid-template-columns:360px 1fr; height:100vh; }
+  @media (max-width:900px) { .caixa-at { grid-template-columns:1fr; height:auto; } }
+  .esq { background:#fff; border-right:1px solid var(--borda); display:flex; flex-direction:column; min-height:0; }
+  .abas { display:flex; border-bottom:1px solid var(--borda); }
+  .abas a { flex:1; text-align:center; padding:11px 2px; font-size:12px; white-space:nowrap; color:var(--suave); text-decoration:none; border-bottom:2px solid transparent; position:relative; }
+  .abas a.ativa { color:var(--azul); border-color:var(--azul); font-weight:600; }
+  .abas a .n { display:inline-block; background:#22c55e; color:#fff; border-radius:99px; font-size:10.5px; padding:0 6px; margin-left:3px; }
+  .busca { display:flex; gap:6px; padding:10px; border-bottom:1px solid var(--borda); position:relative; }
+  .busca input { font-size:13.5px; }
+  .filtro-btn { position:relative; border:1px solid var(--borda); background:#fff; border-radius:6px; padding:0 10px; cursor:pointer; }
+  .filtro-btn b { position:absolute; top:-6px; right:-6px; background:var(--azul); color:#fff; border-radius:99px; font-size:10px; padding:0 5px; }
+  .acoes-lista { display:flex; gap:8px; padding:8px 10px; border-bottom:1px solid var(--borda); }
+  .filtros { padding:10px; border-bottom:1px solid var(--borda); background:var(--cinza); display:none; }
+  .filtros.aberto { display:block; }
+  .filtros select { margin-bottom:8px; font-size:13px; }
+  #lista { overflow-y:auto; flex:1; }
+  .item { display:flex; gap:10px; padding:11px 12px; border-bottom:1px solid #eef1f4; text-decoration:none; color:var(--texto); }
+  .item:hover { background:#f7f9fb; } .item.sel { background:var(--azul-claro); }
+  .item.urg { box-shadow:inset 3px 0 0 #b42318; }
+  .av { width:40px; height:40px; border-radius:50%; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:600; flex:none; }
+  .meio { flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; }
+  .l1, .l2 { display:flex; align-items:center; gap:6px; }
+  .l1 b { flex:1; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:600; }
+  .l1 small { color:var(--suave); font-size:11px; }
+  .prev { flex:1; font-size:12.5px; color:var(--suave); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .naolidas { background:#22c55e; color:#fff; border-radius:99px; font-size:11px; padding:0 6px; }
+  .ag { width:18px; height:18px; border-radius:50%; background:#13294b; color:#fff; font-size:10px; display:flex; align-items:center; justify-content:center; }
+  .pt { width:10px; height:10px; border-radius:50%; }
+  .tags { display:flex; gap:4px; } .tags i { width:22px; height:4px; border-radius:2px; display:block; }
+  .vazio-lista { text-align:center; color:var(--suave); padding:50px 20px; font-size:14px; }
+  .dir { display:flex; flex-direction:column; min-height:0; background:#f4f6f8; }
+  .vazio-chat { margin:auto; text-align:center; color:var(--suave); }
+  .cab-chat { background:#fff; border-bottom:1px solid var(--borda); padding:10px 16px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  .cab-chat .nome { font-weight:600; font-size:15px; } .cab-chat .det { font-size:12.5px; color:var(--suave); }
+  .cab-chat .acoes { margin-left:auto; display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
+  .cab-chat select { width:auto; font-size:13px; padding:5px 8px; }
+  details.pop { position:relative; } details.pop summary { list-style:none; cursor:pointer; }
+  details.pop .painel { position:absolute; right:0; top:36px; background:#fff; border:1px solid var(--borda); border-radius:8px; padding:12px; z-index:5; width:240px; box-shadow:0 8px 24px rgba(0,0,0,.12); }
+  #msgs { flex:1; overflow-y:auto; padding:16px 24px; display:flex; flex-direction:column; gap:6px; }
+  .msg { max-width:68%; padding:7px 10px 4px; border-radius:10px; font-size:14px; box-shadow:0 1px 1px rgba(0,0,0,.06); }
+  .msg .txt { white-space:pre-wrap; word-wrap:break-word; }
+  .msg .hora { font-size:10.5px; color:var(--suave); text-align:right; }
+  .msg .autor { font-size:11px; font-weight:600; margin-bottom:2px; }
+  .msg.m-ent { background:#fff; align-self:flex-start; border-top-left-radius:2px; }
+  .msg.m-bot { background:#e8eef9; align-self:flex-end; border-top-right-radius:2px; } .msg.m-bot .autor { color:#3b5bdb; }
+  .msg.m-ag { background:#dcf8c6; align-self:flex-end; border-top-right-radius:2px; } .msg.m-ag .autor { color:#2b8a3e; }
+  .dia-sep { text-align:center; margin:8px 0; } .dia-sep span { background:#e2e8ef; font-size:11.5px; padding:3px 10px; border-radius:8px; color:var(--suave); }
+  .envio { background:#fff; border-top:1px solid var(--borda); padding:10px 16px; display:flex; gap:8px; align-items:flex-end; }
+  .envio textarea { min-height:44px; max-height:160px; resize:vertical; }
+  .faixa { padding:10px 16px; font-size:13.5px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .faixa.fila { background:#fff3dc; color:var(--amarelo); } .faixa.fechada { background:#fde8e6; color:var(--vermelho); } .faixa.bot { background:#e8eef9; color:#3b5bdb; }
+  .lateral-info { font-size:12.5px; color:var(--suave); }
+  .aviso { margin:10px 16px 0; }
+</style>{% endblock %}
+{% block conteudo %}
+<div class="caixa-at">
+  <section class="esq">
+    <div class="abas">
+      {% for k, rot in abas %}
+        <a href="?aba={{ k }}" class="{{ 'ativa' if aba == k }}">{{ rot }}{% if contagens.get(k) %}<span class="n" data-cont="{{ k }}">{{ contagens[k] }}</span>{% endif %}</a>
+      {% endfor %}
+    </div>
+    <form class="busca" method="get">
+      <input type="hidden" name="aba" value="{{ aba }}">
+      <input name="busca" value="{{ busca }}" placeholder="Buscar nome, telefone ou mensagem…">
+      <button type="button" class="filtro-btn" onclick="document.querySelector('.filtros').classList.toggle('aberto')" title="Filtros">⚲{% if filtros_ativos %}<b>{{ filtros_ativos }}</b>{% endif %}</button>
+      <div class="filtros {{ 'aberto' if filtros_ativos }}" style="position:absolute;left:0;right:0;top:100%;z-index:6;box-shadow:0 8px 16px rgba(0,0,0,.08)">
+        <select name="setor"><option value="">Todos os setores</option>{% for st in setores %}<option value="{{ st.id }}" {{ 'selected' if setor == st.id|string }}>{{ st.nome }}</option>{% endfor %}</select>
+        <select name="etiqueta"><option value="">Todas as etiquetas</option>{% for e in etiquetas %}<option value="{{ e.id }}" {{ 'selected' if etiqueta == e.id|string }}>{{ e.nome }}</option>{% endfor %}</select>
+        <select name="agente"><option value="">Qualquer atendente</option>{% for ag in agentes %}<option {{ 'selected' if agente == ag }}>{{ ag }}</option>{% endfor %}</select>
+        <div class="linha entre"><a href="?aba={{ aba }}" class="suave" style="font-size:13px">Limpar filtros</a><button class="btn peq">Aplicar</button></div>
+      </div>
+    </form>
+    <div class="acoes-lista">
+      <form method="post" action="/atendimentos/proximo" style="flex:1"><input type="hidden" name="setor" value="{{ setor }}"><button class="btn peq" style="width:100%">⤓ Pegar próximo da fila</button></form>
+      <a class="btn sec peq" href="/atendimentos/painel">Tempo real</a>
+      {% if usuario.papel == 'coordenacao' %}<a class="btn sec peq" href="/atendimentos/config" title="Setores e etiquetas">⚙</a>{% endif %}
+    </div>
+    <div id="lista">{% include "_atend_lista.html" %}</div>
+  </section>
+
+  <section class="dir">
+    {% if msg %}<div class="aviso ok">{{ msg }}</div>{% endif %}{% if erro %}<div class="aviso erro">{{ erro }}</div>{% endif %}
+    {% if not cp %}
+      <div class="vazio-chat"><div style="font-size:64px">💬</div>Selecione um atendimento</div>
+    {% else %}
+      <div class="cab-chat">
+        <span class="av" style="background:#3b5bdb">{{ cp.nome_exibicao[:1]|upper }}</span>
+        <div>
+          <div class="nome">{{ cp.nome_exibicao }}</div>
+          <div class="det">{{ cp.telefone|fone }}{% if cp.idade() is not none %} · {{ cp.idade() }} anos{% endif %}{% if cp.numero_prontuario %} · pront. {{ cp.numero_prontuario }}{% endif %}
+            {% for a in prox_ags[:1] %} · próxima: {{ a.inicio.strftime('%d/%m %H:%M') }} ({{ a.descricao }}){% endfor %}</div>
+        </div>
+        <div class="acoes">
+          <a class="btn sec peq" href="/pacientes/{{ cp.id }}">Ficha</a>
+          <a class="btn sec peq" href="/agendar?paciente_id={{ cp.id }}">Agendar</a>
+          {% if at %}
+            <form class="inline" method="post" action="/atendimentos/{{ at.id }}/transferir">
+              <select name="setor_id" onchange="this.form.submit()" title="Setor">{% for st in setores %}<option value="{{ st.id }}" {{ 'selected' if at.setor_id == st.id }}>{{ st.nome }}</option>{% endfor %}</select>
+            </form>
+            <details class="pop"><summary class="btn sec peq">🏷 Etiquetas</summary>
+              <form class="painel" method="post" action="/atendimentos/{{ at.id }}/etiquetas">
+                {% set marcadas = at.etiquetas|map(attribute='id')|list %}
+                {% for e in etiquetas %}<label class="check"><input type="checkbox" name="etiquetas" value="{{ e.id }}" {{ 'checked' if e.id in marcadas }}><i style="width:10px;height:10px;border-radius:2px;background:{{ e.cor }};display:inline-block"></i> {{ e.nome }}</label>{% endfor %}
+                <button class="btn peq" style="margin-top:8px">Salvar</button>
+              </form>
+            </details>
+            <details class="pop"><summary class="btn peq">Finalizar</summary>
+              <form class="painel" method="post" action="/atendimentos/{{ at.id }}/finalizar">
+                <p style="margin:0 0 8px;font-size:13px">O paciente volta a ser atendido pelo bot.</p>
+                <label class="check"><input type="checkbox" name="avisar" value="1" checked> Enviar mensagem de encerramento</label>
+                <button class="btn peq" style="margin-top:8px;width:100%">Finalizar atendimento</button>
+              </form>
+            </details>
+          {% endif %}
+        </div>
+      </div>
+
+      {% if at and at.status == 'fila' %}
+        <div class="faixa fila">⏳ Aguardando na fila de <b>{{ at.setor.nome if at.setor else '—' }}</b> há {{ at.aberto_em|ha_quanto }}{% if at.motivo %} · {{ at.motivo }}{% endif %}
+          <form class="inline" method="post" action="/atendimentos/{{ at.id }}/assumir"><button class="btn peq">Assumir</button></form></div>
+      {% elif at %}
+        <div class="faixa bot" style="background:#e3f4ea;color:var(--verde)">👤 Em atendimento com <b>{{ at.assumido_por }}</b>{% if at.motivo %} · {{ at.motivo }}{% endif %}
+          {% if at.assumido_por != usuario.login %}<form class="inline" method="post" action="/atendimentos/{{ at.id }}/assumir"><button class="btn sec peq">Assumir para mim</button></form>{% endif %}</div>
+      {% else %}
+        <div class="faixa bot">🤖 Este paciente está sendo atendido pelo bot.
+          <form class="inline" method="post" action="/atendimentos/paciente/{{ cp.id }}/abrir"><button class="btn peq">Assumir conversa</button></form></div>
+      {% endif %}
+
+      <div id="msgs">{% include "_atend_mensagens.html" %}</div>
+
+      {% if at %}
+        {% if janela %}
+        <form class="envio" method="post" action="/atendimentos/{{ at.id }}/responder" id="form-envio">
+          <textarea name="texto" placeholder="Digite sua mensagem… (Enter envia, Shift+Enter quebra linha)" required></textarea>
+          <button class="btn">Enviar</button>
+        </form>
+        {% else %}
+        <div class="faixa fechada">⚠️ Passaram 24h desde a última mensagem do paciente. Pela regra do WhatsApp, só dá para enviar um <b>modelo aprovado</b>.
+          <form class="inline" method="post" action="/atendimentos/{{ at.id }}/modelo"><button class="btn peq">Enviar modelo de contato</button></form></div>
+        {% endif %}
+      {% endif %}
+    {% endif %}
+  </section>
+</div>
+<script>
+(function () {
+  const params = new URLSearchParams(location.search);
+  const lista = document.getElementById('lista'), msgs = document.getElementById('msgs');
+  const pid = params.get('p');
+  if (msgs) msgs.scrollTop = msgs.scrollHeight;
+  const ta = document.querySelector('#form-envio textarea');
+  if (ta) { ta.focus(); ta.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (ta.value.trim()) ta.form.submit(); } }); }
+  async function atualizar() {
+    try {
+      const r = await fetch('/atendimentos/_lista?' + params.toString());
+      if (r.ok) { lista.innerHTML = await r.text(); }
+      if (pid && msgs) {
+        const r2 = await fetch('/atendimentos/_mensagens/' + pid);
+        if (r2.ok) {
+          const noFim = msgs.scrollHeight - msgs.scrollTop - msgs.clientHeight < 60;
+          const html = await r2.text();
+          if (html !== msgs.innerHTML) { msgs.innerHTML = html; if (noFim) msgs.scrollTop = msgs.scrollHeight; }
+        }
+      }
+    } catch (e) {}
+  }
+  setInterval(atualizar, 5000);
+})();
+</script>
+{% endblock %}

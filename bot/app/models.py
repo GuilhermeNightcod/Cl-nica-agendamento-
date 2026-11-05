@@ -189,6 +189,7 @@ class Agendamento(Base):
     queixa: Mapped[str | None] = mapped_column(Text)
     observacao: Mapped[str | None] = mapped_column(Text)
     aluno: Mapped[str | None] = mapped_column(String(120))
+    hora: Mapped[time | None] = mapped_column(Time)  # horário de chegada do paciente (opcional)
     origem: Mapped[str] = mapped_column(String(20), default="bot")  # bot | recepcao
     criado_por: Mapped[str | None] = mapped_column(String(60))
     # agendado | confirmado | cancelado | compareceu | faltou
@@ -200,6 +201,11 @@ class Agendamento(Base):
     vaga: Mapped[Vaga] = relationship(back_populates="agendamentos")
     especialidade: Mapped[Especialidade | None] = relationship()
     procedimento: Mapped[Procedimento | None] = relationship()
+
+    @property
+    def inicio(self) -> datetime:
+        """Data e hora do paciente: o horário dele, ou o início da clínica."""
+        return datetime.combine(self.vaga.inicio.date(), self.hora) if self.hora else self.vaga.inicio
 
     @property
     def descricao(self) -> str:
@@ -273,4 +279,111 @@ class Mensagem(Base):
     direcao: Mapped[str] = mapped_column(String(10))  # entrada | saida
     conteudo: Mapped[str] = mapped_column(Text)
     wa_message_id: Mapped[str | None] = mapped_column(String(128), unique=True)
+    autor: Mapped[str | None] = mapped_column(String(60))  # bot | login do atendente | None (paciente)
+    atendimento_id: Mapped[int | None] = mapped_column(ForeignKey("atendimentos.id"), index=True)
     criado_em: Mapped[datetime] = mapped_column(DateTime, default=agora, index=True)
+
+
+# ============================================================ atendimento humano (WhatsApp)
+class Setor(Base):
+    """Fila de atendimento: Recepção, Urgência, Dúvidas clínicas..."""
+
+    __tablename__ = "setores"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    nome: Mapped[str] = mapped_column(String(60), unique=True)
+    cor: Mapped[str] = mapped_column(String(9), default="#0f5c8c")
+    padrao: Mapped[bool] = mapped_column(Boolean, default=False)
+    ativo: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class Etiqueta(Base):
+    __tablename__ = "etiquetas"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    nome: Mapped[str] = mapped_column(String(40), unique=True)
+    cor: Mapped[str] = mapped_column(String(9), default="#6b7280")
+
+
+atendimento_etiqueta = Table(
+    "atendimento_etiqueta",
+    Base.metadata,
+    Column("atendimento_id", ForeignKey("atendimentos.id", ondelete="CASCADE"), primary_key=True),
+    Column("etiqueta_id", ForeignKey("etiquetas.id", ondelete="CASCADE"), primary_key=True),
+)
+
+
+class Atendimento(Base):
+    """
+    Uma conversa com atendimento humano.
+      fila            -> aguardando alguém assumir
+      em_atendimento  -> um atendente assumiu
+      finalizado      -> encerrado (o bot volta a responder)
+    """
+
+    __tablename__ = "atendimentos"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    paciente_id: Mapped[int] = mapped_column(ForeignKey("pacientes.id"), index=True)
+    setor_id: Mapped[int | None] = mapped_column(ForeignKey("setores.id"), index=True)
+    status: Mapped[str] = mapped_column(String(20), default="fila", index=True)
+    motivo: Mapped[str | None] = mapped_column(String(200))
+    urgente: Mapped[bool] = mapped_column(Boolean, default=False)
+    assumido_por: Mapped[str | None] = mapped_column(String(60), index=True)
+    finalizado_por: Mapped[str | None] = mapped_column(String(60))
+    aberto_em: Mapped[datetime] = mapped_column(DateTime, default=agora, index=True)
+    assumido_em: Mapped[datetime | None] = mapped_column(DateTime)
+    finalizado_em: Mapped[datetime | None] = mapped_column(DateTime)
+    ultima_msg_em: Mapped[datetime] = mapped_column(DateTime, default=agora, index=True)
+    nao_lidas: Mapped[int] = mapped_column(Integer, default=0)
+
+    paciente: Mapped[Paciente] = relationship()
+    setor: Mapped[Setor | None] = relationship()
+    etiquetas: Mapped[list[Etiqueta]] = relationship(secondary=atendimento_etiqueta, order_by="Etiqueta.nome")
+
+    @property
+    def aberto(self) -> bool:
+        return self.status in ("fila", "em_atendimento")
+
+
+# ============================================================ odontograma
+DENTES_PERMANENTES = [
+    [18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28],
+    [48, 47, 46, 45, 44, 43, 42, 41, 31, 32, 33, 34, 35, 36, 37, 38],
+]
+DENTES_DECIDUOS = [
+    [55, 54, 53, 52, 51, 61, 62, 63, 64, 65],
+    [85, 84, 83, 82, 81, 71, 72, 73, 74, 75],
+]
+REGIOES = {
+    "maxila": "Maxila", "mandibula": "Mandíbula", "face": "Face",
+    "arcada_sup": "Arcada superior", "arcada_inf": "Arcada inferior", "arcadas": "Arcadas",
+}
+STATUS_DENTE = {
+    "aberto": "Em tratamento", "finalizado": "Finalizado", "existente": "Já existente", "ausente": "Ausente/extraído",
+}
+
+
+class RegistroDente(Base):
+    """Um registro do odontograma: procedimento num dente (ou região), com faces e status."""
+
+    __tablename__ = "odontograma"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    paciente_id: Mapped[int] = mapped_column(ForeignKey("pacientes.id"), index=True)
+    dente: Mapped[str] = mapped_column(String(12))  # "11".."85" ou código de região
+    faces: Mapped[str] = mapped_column(String(10), default="")  # letras: M O D V L
+    procedimento_id: Mapped[int | None] = mapped_column(ForeignKey("procedimentos.id"))
+    descricao: Mapped[str] = mapped_column(String(120))
+    status: Mapped[str] = mapped_column(String(12), default="aberto")
+    anotacao: Mapped[str | None] = mapped_column(Text)
+    aluno: Mapped[str | None] = mapped_column(String(120))
+    criado_por: Mapped[str | None] = mapped_column(String(60))
+    criado_em: Mapped[datetime] = mapped_column(DateTime, default=agora)
+    finalizado_em: Mapped[datetime | None] = mapped_column(DateTime)
+
+    procedimento: Mapped[Procedimento | None] = relationship()
+
+    @property
+    def local(self) -> str:
+        return REGIOES.get(self.dente, f"Dente {self.dente}")

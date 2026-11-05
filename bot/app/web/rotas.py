@@ -30,13 +30,19 @@ from ..fluxo import ESTADOS_AGENDAMENTO
 from ..models import (
     DIAS_SEMANA,
     Agendamento,
+    Atendimento,
     Conversa,
     Documento,
     Especialidade,
     ListaEspera,
     Paciente,
     Procedimento,
+    DENTES_DECIDUOS,
+    DENTES_PERMANENTES,
+    REGIOES,
+    STATUS_DENTE,
     RegistroAcesso,
+    RegistroDente,
     SessaoClinica,
     Vaga,
 )
@@ -104,6 +110,9 @@ def registrar_acesso(s, u: dict, acao: str, paciente_id: int | None = None, deta
 def render(request: Request, nome: str, **ctx) -> HTMLResponse:
     ctx.setdefault("msg", request.query_params.get("msg"))
     ctx.setdefault("erro", request.query_params.get("erro"))
+    if request.session.get("usuario") and "fila_count" not in ctx:
+        with sessao() as s:
+            ctx["fila_count"] = s.scalar(select(func.count(Atendimento.id)).where(Atendimento.status == "fila")) or 0
     return templates.TemplateResponse(request, nome, {"usuario": request.session.get("usuario"), **ctx})
 
 
@@ -157,6 +166,13 @@ def data_ou_none(txt: str | None) -> date | None:
         return None
 
 
+def hora_ou_none(txt: str | None) -> time | None:
+    try:
+        return time.fromisoformat(txt) if txt else None
+    except ValueError:
+        return None
+
+
 def int_ou_none(txt) -> int | None:
     return int(txt) if str(txt or "").strip().isdigit() else None
 
@@ -194,23 +210,57 @@ def procedimentos_por_area(s, sessao_clinica: SessaoClinica | None = None) -> li
 
 
 # ============================================================ agenda
+CORES_TURMA = ["#2563eb", "#0d9488", "#7c3aed", "#c2410c", "#be185d", "#4d7c0f"]
+
+
+def _layout_dia(vagas: list[Vaga]) -> list[tuple[Vaga, int, int]]:
+    """Distribui clínicas que acontecem no mesmo horário lado a lado: (vaga, coluna, total de colunas)."""
+    colunas: list[datetime] = []
+    pos = []
+    for v in sorted(vagas, key=lambda v: v.inicio):
+        for i, fim in enumerate(colunas):
+            if fim <= v.inicio:
+                colunas[i] = v.fim
+                pos.append((v, i))
+                break
+        else:
+            colunas.append(v.fim)
+            pos.append((v, len(colunas) - 1))
+    return [(v, i, max(1, len(colunas))) for v, i in pos]
+
+
 @router.get("/agenda", response_class=HTMLResponse)
-def agenda(request: Request, semana: str = "", turma: str = "", u=Depends(usuario)):
-    seg = segunda_da_semana(data_ou_none(semana) or config.agora().date())
+def agenda(request: Request, semana: str = "", turma: str = "", professor: str = "", visao: str = "semana", u=Depends(usuario)):
+    ref = data_ou_none(semana) or config.agora().date()
+    seg = segunda_da_semana(ref)
+    dias_vistos = [ref] if visao == "dia" else [seg + timedelta(days=i) for i in range(6)]
     with sessao() as s:
         q = (
-            select(Vaga)
-            .join(SessaoClinica)
-            .where(Vaga.inicio >= datetime.combine(seg, time()), Vaga.inicio < datetime.combine(seg + timedelta(days=6), time()))
+            select(Vaga).join(SessaoClinica)
+            .where(Vaga.inicio >= datetime.combine(dias_vistos[0], time()),
+                   Vaga.inicio < datetime.combine(dias_vistos[-1] + timedelta(days=1), time()))
             .order_by(Vaga.inicio, SessaoClinica.turma)
         )
         if turma:
             q = q.where(SessaoClinica.turma == turma)
+        if professor:
+            q = q.where(SessaoClinica.professor == professor)
         vagas = s.scalars(q).all()
-        dias = [(seg + timedelta(days=i), [v for v in vagas if v.inicio.date() == seg + timedelta(days=i)]) for i in range(6)]
+        lista_turmas = turmas(s)
+        cores = {t: CORES_TURMA[i % len(CORES_TURMA)] for i, t in enumerate(lista_turmas)}
+        if vagas:
+            h_ini = min(v.inicio.hour for v in vagas)
+            h_fim = max(v.fim.hour + (1 if v.fim.minute else 0) for v in vagas)
+        else:
+            h_ini, h_fim = 18, 23
+        h_ini, h_fim = max(0, h_ini - 1), min(24, max(h_fim + 1, h_ini + 4))
+        dias = [(d, _layout_dia([v for v in vagas if v.inicio.date() == d])) for d in dias_vistos]
+        professores = sorted({p for p in s.scalars(select(SessaoClinica.professor).distinct()) if p})
+        passo = timedelta(days=1 if visao == "dia" else 7)
         return render(
-            request, "agenda.html", dias=dias, seg=seg, turma=turma, turmas=turmas(s), hoje=config.agora().date(),
-            anterior=seg - timedelta(days=7), proxima=seg + timedelta(days=7), timedelta=timedelta,
+            request, "agenda.html", dias=dias, seg=seg, ref=ref, turma=turma, professor=professor, visao=visao,
+            turmas=lista_turmas, professores=professores, cores=cores, hoje=config.agora().date(),
+            anterior=ref - passo, proxima=ref + passo, h_ini=h_ini, h_fim=h_fim, px_hora=120 if visao == "dia" else 110,
         )
 
 
@@ -236,6 +286,7 @@ def agendar_na_vaga(
     procedimento: str = Form(""),  # "proc:<id>" ou "esp:<id>"
     aluno: str = Form(""),
     observacao: str = Form(""),
+    hora: str = Form(""),
     encaixe: str = Form(""),
     avisar: str = Form(""),
     espera_id: str = Form(""),
@@ -287,6 +338,7 @@ def agendar_na_vaga(
         except VagaIndisponivel as e:
             s.rollback()
             return ir(voltar, erro=f"{e} Marque 'encaixe' para agendar além do limite." if "vagas" in str(e) else str(e))
+        ag.hora = hora_ou_none(hora)
         if int_ou_none(espera_id) and (item := s.get(ListaEspera, int(espera_id))):
             item.status = "atendido"
         registrar_acesso(s, u, "agendou", p.id, f"{ag.descricao} {v.inicio:%d/%m/%Y %H:%M}")
@@ -307,12 +359,13 @@ def status_agendamento(ag_id: int, status: str = Form(...), voltar: str = Form("
 
 
 @router.post("/agenda/agendamento/{ag_id}/editar")
-def editar_agendamento(ag_id: int, aluno: str = Form(""), observacao: str = Form(""), u=Depends(usuario)):
+def editar_agendamento(ag_id: int, aluno: str = Form(""), observacao: str = Form(""), hora: str = Form(""), u=Depends(usuario)):
     with sessao() as s:
         ag = s.get(Agendamento, ag_id)
         if not ag:
             raise HTTPException(404)
         ag.aluno, ag.observacao = aluno.strip() or None, observacao.strip() or None
+        ag.hora = hora_ou_none(hora)
         vaga_id = ag.vaga_id
     return ir(f"/agenda/vaga/{vaga_id}", msg="Salvo.")
 
@@ -416,8 +469,84 @@ def ficha(request: Request, pid: int, u=Depends(usuario)):
         registrar_acesso(s, u, "abriu ficha", p.id)
         ags = s.scalars(select(Agendamento).join(Vaga).where(Agendamento.paciente_id == p.id).order_by(Vaga.inicio.desc())).all()
         espera = s.scalars(select(ListaEspera).where(ListaEspera.paciente_id == p.id, ListaEspera.status == "aguardando")).all()
+        regs = s.scalars(select(RegistroDente).where(RegistroDente.paciente_id == p.id)
+                         .order_by(RegistroDente.status != "aberto", RegistroDente.criado_em.desc())).all()
+        idade = p.idade()
         return render(request, "paciente.html", p=p, ags=ags, espera=espera, tipos=TIPOS_DOCUMENTO,
-                      tipos_dict=dict(TIPOS_DOCUMENTO), hoje=config.agora().date())
+                      tipos_dict=dict(TIPOS_DOCUMENTO), hoje=config.agora().date(),
+                      regs=regs, odo=montar_odontograma(regs), arcadas_perm=DENTES_PERMANENTES, arcadas_dec=DENTES_DECIDUOS,
+                      regioes=REGIOES, status_dente=STATUS_DENTE, areas=procedimentos_por_area(s),
+                      aba_odonto="dec" if idade is not None and idade < 6 else "perm")
+
+
+PRIORIDADE = {"ausente": 4, "aberto": 3, "finalizado": 2, "existente": 1}
+
+
+def montar_odontograma(regs: list[RegistroDente]) -> dict:
+    """{dente: {"status": ..., "faces": {"M": status}, "nota": bool, "n": quantidade}}"""
+    odo: dict[str, dict] = {}
+    for r in regs:
+        d = odo.setdefault(r.dente, {"status": None, "faces": {}, "nota": False, "n": 0})
+        d["n"] += 1
+        d["nota"] = d["nota"] or bool(r.anotacao)
+        if PRIORIDADE.get(r.status, 0) > PRIORIDADE.get(d["status"], 0):
+            d["status"] = r.status
+        for f in r.faces or "":
+            if PRIORIDADE.get(r.status, 0) > PRIORIDADE.get(d["faces"].get(f), 0):
+                d["faces"][f] = r.status
+    return odo
+
+
+@router.post("/pacientes/{pid:int}/odontograma")
+def novo_registro_dente(
+    pid: int, dente: str = Form(...), faces: list[str] = Form([]), procedimento: str = Form(""), descricao: str = Form(""),
+    status: str = Form("aberto"), anotacao: str = Form(""), aluno: str = Form(""), u=Depends(usuario),
+):
+    validos = {str(n) for arc in DENTES_PERMANENTES + DENTES_DECIDUOS for n in arc} | set(REGIOES)
+    if dente not in validos:
+        return ir(f"/pacientes/{pid}", erro="Escolha um dente ou região no odontograma.")
+    with sessao() as s:
+        if not s.get(Paciente, pid):
+            raise HTTPException(404)
+        proc = s.get(Procedimento, int(procedimento[5:])) if procedimento.startswith("proc:") else None
+        texto = (descricao.strip() or (proc.nome if proc else "")).strip()
+        if not texto and status != "ausente":
+            return ir(f"/pacientes/{pid}", erro="Escolha o procedimento ou escreva a descrição.")
+        r = RegistroDente(
+            paciente_id=pid, dente=dente, faces="".join(f for f in "MODVL" if f in faces), procedimento_id=proc.id if proc else None,
+            descricao=texto or "Ausente", status=status if status in STATUS_DENTE else "aberto", anotacao=anotacao.strip() or None,
+            aluno=aluno.strip() or None, criado_por=u["login"], finalizado_em=config.agora() if status == "finalizado" else None,
+        )
+        s.add(r)
+        registrar_acesso(s, u, "registrou no odontograma", pid, f"{r.local} {r.faces} {r.descricao}")
+    return RedirectResponse(f"/pacientes/{pid}?msg=Registrado+no+odontograma.#odontograma", status_code=303)
+
+
+@router.post("/odontograma/{rid}/status")
+def status_registro_dente(rid: int, status: str = Form(...), u=Depends(usuario)):
+    with sessao() as s:
+        r = s.get(RegistroDente, rid)
+        if not r or status not in STATUS_DENTE:
+            raise HTTPException(404)
+        r.status = status
+        r.finalizado_em = config.agora() if status == "finalizado" else None
+        registrar_acesso(s, u, f"odontograma: {status}", r.paciente_id, f"{r.local} {r.descricao}")
+        pid = r.paciente_id
+    return RedirectResponse(f"/pacientes/{pid}#odontograma", status_code=303)
+
+
+@router.post("/odontograma/{rid}/excluir")
+def excluir_registro_dente(rid: int, u=Depends(usuario)):
+    with sessao() as s:
+        r = s.get(RegistroDente, rid)
+        if not r:
+            raise HTTPException(404)
+        if u["papel"] != "coordenacao" and r.criado_por != u["login"]:
+            raise HTTPException(403, "Só quem registrou ou a coordenação pode excluir.")
+        pid = r.paciente_id
+        registrar_acesso(s, u, "excluiu do odontograma", pid, f"{r.local} {r.descricao}")
+        s.delete(r)
+    return RedirectResponse(f"/pacientes/{pid}#odontograma", status_code=303)
 
 
 @router.post("/pacientes/{pid:int}")

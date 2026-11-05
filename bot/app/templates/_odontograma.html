@@ -1,0 +1,133 @@
+{# Odontograma: numeração FDI, faces M O D V L, status por cor, "!" = anotação #}
+{% set CORES = {'aberto': ('#f59f00', '#ffe8a3'), 'finalizado': ('#2f9e44', '#c3f0cb'), 'existente': ('#1c7ed6', '#d0e5fb'), 'ausente': ('#adb5bd', '#f1f3f5')} %}
+{% macro forma(n) -%}
+  {%- set t = n % 10 -%}{%- set dec = (n // 10) >= 5 -%}
+  {%- if t <= 2 -%}M12 34 L15 6 Q18 1 21 6 L24 34 Q26 56 18 60 Q10 56 12 34 Z
+  {%- elif t == 3 -%}M12 36 L15 2 Q18 -2 21 2 L24 36 Q26 52 18 62 Q10 52 12 36 Z
+  {%- elif t <= 5 and not dec -%}M9 34 L13 6 Q18 1 23 6 L27 34 Q30 56 18 60 Q6 56 9 34 Z
+  {%- else -%}M4 32 L7 6 Q10 2 13 6 L16 24 Q18 27 20 24 L23 6 Q26 2 29 6 L32 32 Q35 58 18 60 Q1 58 4 32 Z{%- endif -%}
+{%- endmacro %}
+{% macro faces_svg(n, info, superior) -%}
+  {%- set q = n // 10 -%}{%- set m_direita = q in (1, 4, 5, 8) -%}
+  {%- set f = info.faces if info else {} -%}
+  {%- set topo = 'V' if superior else 'L' -%}{%- set base = 'L' if superior else 'V' -%}
+  {%- set esq = 'D' if m_direita else 'M' -%}{%- set dir = 'M' if m_direita else 'D' -%}
+  <svg class="faces" viewBox="0 0 26 26" width="24" height="24">
+    {% for face, pts in [(topo, '0,0 26,0 18,8 8,8'), (base, '0,26 26,26 18,18 8,18'), (esq, '0,0 8,8 8,18 0,26'), (dir, '26,0 18,8 18,18 26,26')] %}
+      <polygon points="{{ pts }}" fill="{{ CORES[f[face]][1] if f.get(face) else '#fff' }}" stroke="{{ CORES[f[face]][0] if f.get(face) else '#ced4da' }}" stroke-width="1"><title>{{ face }}</title></polygon>
+    {% endfor %}
+    <rect x="8" y="8" width="10" height="10" fill="{{ CORES[f['O']][1] if f.get('O') else '#fff' }}" stroke="{{ CORES[f['O']][0] if f.get('O') else '#ced4da' }}"><title>O</title></rect>
+  </svg>
+{%- endmacro %}
+{% macro dente(n, superior) -%}
+  {%- set info = odo.get(n|string) -%}{%- set st = info.status if info else None -%}
+  <button type="button" class="dente {{ 'tem' if info }} {{ st or '' }}" data-dente="{{ n }}" title="Dente {{ n }}{% if info %} · {{ info.n }} registro(s){% endif %}">
+    {% if superior %}<span class="num {{ 'aberto-n' if st == 'aberto' }}">{{ n }}{% if info and info.nota %}<b class="nota">!</b>{% endif %}</span>{% endif %}
+    {% if not superior %}{{ faces_svg(n, info, superior) }}{% endif %}
+    <svg viewBox="0 0 36 64" width="30" height="54" style="{{ '' if superior else 'transform:scaleY(-1)' }}">
+      <path d="{{ forma(n) }}" fill="{{ CORES[st][1] if st else '#fff' }}" stroke="{{ CORES[st][0] if st else '#adb5bd' }}" stroke-width="1.6"/>
+      {% if st == 'ausente' %}<path d="M6 8 L30 58 M30 8 L6 58" stroke="#868e96" stroke-width="2"/>{% endif %}
+    </svg>
+    {% if superior %}{{ faces_svg(n, info, superior) }}{% endif %}
+    {% if not superior %}<span class="num {{ 'aberto-n' if st == 'aberto' }}">{{ n }}{% if info and info.nota %}<b class="nota">!</b>{% endif %}</span>{% endif %}
+  </button>
+{%- endmacro %}
+
+<div class="caixa" id="odontograma">
+  <div class="linha entre" style="margin-bottom:10px">
+    <h2 style="margin:0">🦷 Odontograma</h2>
+    <div class="seg-tabs">
+      <button type="button" data-aba="perm" class="{{ 'ativa' if aba_odonto == 'perm' }}">Permanentes</button>
+      <button type="button" data-aba="dec" class="{{ 'ativa' if aba_odonto == 'dec' }}">Decíduos</button>
+    </div>
+  </div>
+  {% for chave, arcadas in [('perm', arcadas_perm), ('dec', arcadas_dec)] %}
+  <div class="arcadas" data-painel="{{ chave }}" style="{{ '' if aba_odonto == chave else 'display:none' }}">
+    {% for linha in arcadas %}
+    {% set sup = loop.first %}
+    <div class="arcada {{ 'sup' if sup else 'inf' }}">
+      {% set meio = linha|length // 2 %}
+      <div class="lado">{% for n in linha[:meio] %}{{ dente(n, sup) }}{% endfor %}</div>
+      <div class="lado">{% for n in linha[meio:] %}{{ dente(n, sup) }}{% endfor %}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endfor %}
+  <div class="regioes">
+    {% for cod, nome in regioes.items() %}<button type="button" class="chip {{ 'tem' if odo.get(cod) }}" data-dente="{{ cod }}">{{ nome }}{% if odo.get(cod) %} · {{ odo[cod].n }}{% endif %}</button>{% endfor %}
+  </div>
+  <div class="legenda-odo">
+    {% for cod, nome in status_dente.items() %}<span><i style="background:{{ CORES[cod][1] }};border-color:{{ CORES[cod][0] }}"></i>{{ nome }}</span>{% endfor %}
+    <span><b class="nota" style="position:static">!</b> Anotação</span>
+    <span class="suave">Faces: M mesial · O oclusal/incisal · D distal · V vestibular · L lingual/palatina</span>
+  </div>
+
+  <form class="registro-dente" method="post" action="/pacientes/{{ p.id }}/odontograma" id="form-dente" hidden>
+    <div class="linha entre"><h3 id="titulo-dente" style="margin:0">Dente</h3><button type="button" class="btn sec peq" id="fechar-dente">Fechar</button></div>
+    <input type="hidden" name="dente" id="campo-dente">
+    <div class="campos" style="margin-top:10px">
+      <div><label>Procedimento</label>{% with selecionado='', com_vazio=true, autoenviar=false %}{% include "_select_procedimento.html" %}{% endwith %}</div>
+      <div><label>Ou descreva</label><input name="descricao" placeholder="ex.: cárie, restauração antiga, fratura"></div>
+      <div><label>Status</label><select name="status">{% for cod, nome in status_dente.items() %}<option value="{{ cod }}">{{ nome }}</option>{% endfor %}</select></div>
+      <div><label>Aluno</label><input name="aluno"></div>
+    </div>
+    <div class="linha" id="faces-campo" style="margin-bottom:10px;gap:14px">
+      <span class="suave" style="font-size:13px">Faces:</span>
+      {% for f, nome in [('M','Mesial'),('O','Oclusal'),('D','Distal'),('V','Vestibular'),('L','Lingual/Palatina')] %}<label class="check"><input type="checkbox" name="faces" value="{{ f }}"> {{ f }} <small class="suave">{{ nome }}</small></label>{% endfor %}
+    </div>
+    <div style="margin-bottom:10px"><label>Anotação</label><textarea name="anotacao" style="min-height:50px"></textarea></div>
+    <button class="btn">Registrar</button>
+  </form>
+
+  <div class="tabela" style="margin-top:14px">
+    <div class="linha entre"><h3 style="margin:0">Registros <span id="filtro-dente-rot" class="suave"></span></h3>
+      <button type="button" class="btn sec peq" id="ver-todos" hidden>Ver todos</button></div>
+    <table id="tabela-dentes">
+      <tr><th>Local</th><th>Procedimento</th><th>Status</th><th>Aluno</th><th>Data</th><th></th></tr>
+      {% for r in regs %}
+      <tr data-dente="{{ r.dente }}">
+        <td><b>{{ r.local }}</b>{% if r.faces %} <span class="tag">{{ r.faces }}</span>{% endif %}</td>
+        <td>{{ r.descricao }}{% if r.anotacao %}<br><small>📝 {{ r.anotacao }}</small>{% endif %}</td>
+        <td><span class="tag" style="background:{{ CORES[r.status][1] }};color:{{ CORES[r.status][0] }}">{{ status_dente[r.status] }}</span></td>
+        <td>{{ r.aluno or '' }}</td>
+        <td><small>{{ r.criado_em.strftime('%d/%m/%Y') }}<br>por {{ r.criado_por }}</small></td>
+        <td style="white-space:nowrap;text-align:right">
+          {% if r.status == 'aberto' %}<form class="inline" method="post" action="/odontograma/{{ r.id }}/status"><input type="hidden" name="status" value="finalizado"><button class="btn sec peq">✔ Finalizar</button></form>
+          {% elif r.status == 'finalizado' %}<form class="inline" method="post" action="/odontograma/{{ r.id }}/status"><input type="hidden" name="status" value="aberto"><button class="btn sec peq">Reabrir</button></form>{% endif %}
+          {% if usuario.papel == 'coordenacao' or r.criado_por == usuario.login %}
+          <form class="inline" method="post" action="/odontograma/{{ r.id }}/excluir" onsubmit="return confirm('Excluir este registro?')"><button class="btn perigo peq">✕</button></form>{% endif %}
+        </td>
+      </tr>
+      {% else %}<tr class="vazio-reg"><td colspan="6" class="vazio">Nenhum registro. Clique em um dente para registrar.</td></tr>{% endfor %}
+    </table>
+  </div>
+</div>
+<script>
+(function () {
+  const caixa = document.getElementById('odontograma');
+  caixa.querySelectorAll('.seg-tabs button').forEach(b => b.onclick = () => {
+    caixa.querySelectorAll('.seg-tabs button').forEach(x => x.classList.toggle('ativa', x === b));
+    caixa.querySelectorAll('[data-painel]').forEach(pn => pn.style.display = pn.dataset.painel === b.dataset.aba ? '' : 'none');
+  });
+  const form = document.getElementById('form-dente'), campo = document.getElementById('campo-dente');
+  const titulo = document.getElementById('titulo-dente'), rot = document.getElementById('filtro-dente-rot');
+  const todos = document.getElementById('ver-todos'), facesCampo = document.getElementById('faces-campo');
+  function filtrar(d) {
+    caixa.querySelectorAll('#tabela-dentes tr[data-dente]').forEach(tr => tr.style.display = !d || tr.dataset.dente === d ? '' : 'none');
+    todos.hidden = !d; rot.textContent = d ? '— ' + (isNaN(d) ? d : 'dente ' + d) : '';
+  }
+  caixa.querySelectorAll('[data-dente]').forEach(el => {
+    if (el.tagName !== 'BUTTON') return;
+    el.addEventListener('click', () => {
+      caixa.querySelectorAll('.dente.sel, .chip.sel').forEach(x => x.classList.remove('sel'));
+      el.classList.add('sel');
+      const d = el.dataset.dente; campo.value = d;
+      titulo.textContent = isNaN(d) ? el.textContent.split('·')[0].trim() : 'Dente ' + d;
+      facesCampo.style.display = isNaN(d) ? 'none' : '';
+      form.hidden = false; filtrar(d); form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+  });
+  document.getElementById('fechar-dente').onclick = () => { form.hidden = true; filtrar(null); caixa.querySelectorAll('.sel').forEach(x => x.classList.remove('sel')); };
+  todos.onclick = () => filtrar(null);
+})();
+</script>

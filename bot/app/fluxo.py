@@ -33,6 +33,7 @@ TIPOS_MIDIA = {"audio", "image", "video", "document", "sticker", "location", "co
 class Resultado:
     respostas: list[Resposta] = field(default_factory=list)
     chamar_humano: str | None = None  # motivo, quando o bot passou para um humano agora
+    urgente: bool = False
     repassar_para_humano: bool = False  # paciente já está com humano: só repassar a mensagem
     duplicada: bool = False
 
@@ -151,11 +152,11 @@ def tela_horarios(s: Session, conv: Conversa) -> Resposta:
 
 
 # --------------------------------------------------------------------------- ações
-def _passar_para_humano(conv: Conversa, motivo: str, texto: str) -> Resultado:
+def _passar_para_humano(conv: Conversa, motivo: str, texto: str, urgente: bool = False) -> Resultado:
     conv.atendimento_humano = True
     conv.motivo_humano = motivo
     conv.estado = "humano"
-    return Resultado([Texto(texto)], chamar_humano=motivo)
+    return Resultado([Texto(texto)], chamar_humano=motivo, urgente=urgente)
 
 
 def _iniciar_agendamento(p: Paciente, conv: Conversa) -> list[Resposta]:
@@ -204,21 +205,29 @@ def obter_paciente(s: Session, telefone: str, nome_perfil: str | None = None) ->
     return p, p.conversa
 
 
-def registrar(s: Session, p: Paciente, direcao: str, conteudo: str, wa_id: str | None = None) -> None:
-    s.add(Mensagem(paciente_id=p.id, direcao=direcao, conteudo=conteudo, wa_message_id=wa_id))
+def registrar(s: Session, p: Paciente, direcao: str, conteudo: str, wa_id: str | None = None, autor: str | None = None):
+    from .atendimentos import registrar as _reg
+
+    return _reg(s, p, direcao, conteudo, autor=autor or ("bot" if direcao == "saida" else None), wa_id=wa_id)
 
 
 def processar(s: Session, e: Entrada) -> Resultado:
     if e.wa_message_id and s.scalar(select(Mensagem.id).where(Mensagem.wa_message_id == e.wa_message_id)):
         return Resultado(duplicada=True)  # a Meta às vezes reenvia o mesmo webhook
 
+    from .atendimentos import aberto_do_paciente
+
     p, conv = obter_paciente(s, e.telefone, e.nome_perfil)
-    registrar(s, p, "entrada", e.texto or f"[{e.tipo}]", e.wa_message_id)
+    msg = registrar(s, p, "entrada", e.texto or f"[{e.tipo}]", e.wa_message_id)
     conv.ultima_msg_paciente_em = config.agora()
     conv.atualizado_em = config.agora()
     conv.recuperacao_enviada_em = None
 
     if conv.atendimento_humano:
+        if at := aberto_do_paciente(s, p.id):
+            msg.atendimento_id = at.id
+            at.ultima_msg_em = config.agora()
+            at.nao_lidas += 1
         return Resultado(repassar_para_humano=True)
 
     res = _decidir(s, e, p, conv)
@@ -238,7 +247,7 @@ def _decidir(s: Session, e: Entrada, p: Paciente, conv: Conversa) -> Resultado:
 
     # 1) urgência e pedido de humano valem em qualquer etapa
     if t and any(contem_expressao(t, x) for x in T.PALAVRAS_URGENCIA):
-        return _passar_para_humano(conv, f"URGÊNCIA: {e.texto[:150]}", T.URGENCIA)
+        return _passar_para_humano(conv, f"URGÊNCIA: {e.texto[:150]}", T.URGENCIA, urgente=True)
     if escolha == "menu:humano" or (t and any(re.search(rf"\b{re.escape(x)}\b", t) for x in T.PALAVRAS_HUMANO)):
         return _passar_para_humano(conv, "Paciente pediu atendente", T.HUMANO_ENCAMINHADO)
 

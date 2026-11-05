@@ -4,8 +4,9 @@
 
 - **bot/**: Python 3.12, FastAPI, SQLAlchemy 2, PostgreSQL (SQLite em testes e no simulador).
 - **WhatsApp**: integração direta com a **Cloud API** da Meta (`app/whatsapp.py`), sem BSP.
-- **Atendimento humano**: Chatwoot CE, com uma caixa de entrada do tipo **API**. O bot é dono do
-  número do WhatsApp e "espelha" a conversa no Chatwoot só durante o atendimento humano.
+- **Atendimento humano**: nativo (`app/atendimentos.py` + `app/web/atendimento_rotas.py`): tickets com
+  status fila → em_atendimento → finalizado, setores, etiquetas, TME/TMA. A tela faz polling de fragmentos
+  HTML a cada 5 s. O Chatwoot continua suportado como espelho **opcional** (profile `chatwoot` no compose).
 - **Rotinas**: loop asyncio dentro do processo (`app/tarefas.py`), executado a cada `INTERVALO_TAREFAS_MIN`.
 - **Sistema da clínica**: telas server-side (Jinja2) em `app/web/rotas.py`, login por cookie de sessão
   (Starlette `SessionMiddleware`), usuários e papéis vindos de `USUARIOS` no `.env`.
@@ -14,6 +15,8 @@
 app/
   main.py        app FastAPI, webhooks (/webhook Meta, /chatwoot/webhook), /saude
   web/rotas.py   telas: agenda, agendar, pacientes + prontuário, espera, painel, clínicas, acessos
+  atendimentos.py regras do atendimento humano (fila, assumir, responder, janela de 24h, finalizar)
+  web/atendimento_rotas.py  caixa de entrada, painel tempo real, setores/etiquetas
   agenda.py      regras da agenda (gerar datas, vagas disponíveis, agendar, cancelar) — usada pelo bot e pela web
   fila.py        filas por paciente (hash do telefone -> thread): ordem garantida por paciente
   servico.py     orquestra: fluxo -> envio WhatsApp -> Chatwoot
@@ -37,6 +40,10 @@ SessaoClinica 1─N Vaga                 (uma data concreta; capacidade, ocupada
 Vaga          1─N Agendamento N─1 Paciente   (especialidade, procedimento, aluno, origem bot|recepcao, status)
 Paciente      1─N Documento            (prontuário digitalizado: arquivo no disco em ARQUIVOS_DIR)
 Paciente      1─1 Conversa             (estado do bot)
+Paciente      1─N RegistroDente        (odontograma: dente FDI ou região, faces MODVL, status, aluno, anotação)
+Paciente      1─N Atendimento N─1 Setor, N─N Etiqueta   (atendimento humano do WhatsApp)
+Mensagem      N─1 Atendimento          (autor: bot | login do atendente | None = paciente)
+Agendamento.hora                       (horário de chegada do paciente dentro da clínica)
 RegistroAcesso                         (LGPD: usuário, ação, paciente, quando)
 ```
 

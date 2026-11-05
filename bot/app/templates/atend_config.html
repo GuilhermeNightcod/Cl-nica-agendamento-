@@ -1,0 +1,33 @@
+{% extends "base.html" %}{% block titulo %}Setores e etiquetas{% endblock %}
+{% block conteudo %}
+<p><a href="/atendimentos">← atendimentos</a></p>
+<h1>Setores e etiquetas</h1>
+<p class="sub">Setores são as filas de atendimento. Urgências do bot vão para o setor cujo nome começa com “Urg”; o resto vai para o setor padrão.</p>
+<div class="grade2">
+  <div class="caixa tabela">
+    <h2>Setores (filas)</h2>
+    <table>{% for st in setores %}
+      <tr><td><form class="linha" method="post" action="/atendimentos/config/setor" style="gap:6px">
+        <input type="hidden" name="setor_id" value="{{ st.id }}">
+        <input type="color" name="cor" value="{{ st.cor }}" style="width:42px;padding:2px">
+        <input name="nome" value="{{ st.nome }}" style="flex:1">
+        <select name="ativo" style="width:auto"><option value="1" {{ 'selected' if st.ativo }}>ativo</option><option value="0" {{ 'selected' if not st.ativo }}>inativo</option></select>
+        <label class="check"><input type="checkbox" name="padrao" value="1" {{ 'checked' if st.padrao }}> padrão</label>
+        <button class="btn sec peq">Salvar</button></form></td></tr>
+    {% endfor %}</table>
+    <form class="linha" method="post" action="/atendimentos/config/setor" style="margin-top:10px;gap:6px">
+      <input type="color" name="cor" value="#0f5c8c" style="width:42px;padding:2px"><input name="nome" placeholder="Novo setor" required style="flex:1"><button class="btn peq">Adicionar</button>
+    </form>
+  </div>
+  <div class="caixa tabela">
+    <h2>Etiquetas</h2>
+    <table>{% for e in etiquetas %}
+      <tr><td><i style="display:inline-block;width:24px;height:6px;border-radius:3px;background:{{ e.cor }}"></i> {{ e.nome }}</td>
+        <td style="text-align:right"><form class="inline" method="post" action="/atendimentos/config/etiqueta/{{ e.id }}/excluir"><button class="btn perigo peq">Excluir</button></form></td></tr>
+    {% endfor %}</table>
+    <form class="linha" method="post" action="/atendimentos/config/etiqueta" style="margin-top:10px;gap:6px">
+      <input type="color" name="cor" value="#6b7280" style="width:42px;padding:2px"><input name="nome" placeholder="Nova etiqueta" required style="flex:1"><button class="btn peq">Adicionar</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

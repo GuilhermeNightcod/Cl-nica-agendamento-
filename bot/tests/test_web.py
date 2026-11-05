@@ -23,7 +23,7 @@ def entrar(c, login="recep", senha="senha2"):
 
 def vaga_de(clinica_nome):
     with sessao() as s:
-        return s.scalar(select(Vaga).join(SessaoClinica).where(SessaoClinica.nome == clinica_nome).order_by(Vaga.inicio)).id
+        return s.scalar(select(Vaga).join(SessaoClinica).where(SessaoClinica.nome.contains(clinica_nome)).order_by(Vaga.inicio)).id
 
 
 def test_login_obrigatorio_e_senha_errada(cliente):
@@ -35,11 +35,16 @@ def test_login_obrigatorio_e_senha_errada(cliente):
 def test_sessoes_do_8_semestre_importadas(cliente):
     with sessao() as s:
         terca = s.scalar(select(SessaoClinica).where(SessaoClinica.turma == "8º semestre", SessaoClinica.dia_semana == 1))
-        assert terca.professor == "Profª Jhennifer"
+        assert terca.professor == "Jhenifer Pinheiro"
+        assert terca.hora_inicio.hour == 19  # turma noturna
         assert {e.codigo for e in terca.especialidades} == {"triagem", "endodontia"}
-        hebiatria = s.scalar(select(SessaoClinica).where(SessaoClinica.nome == "Hebiatria"))
+        hebiatria = s.scalar(select(SessaoClinica).where(SessaoClinica.turma == "8º semestre", SessaoClinica.dia_semana == 2))
         assert (hebiatria.idade_min, hebiatria.idade_max) == (10, 19)
         assert s.scalar(select(Vaga).where(Vaga.sessao_id == terca.id)) is not None
+        # segunda do 8º é pré-clínica (sem pacientes): não pode existir clínica
+        assert s.scalar(select(SessaoClinica).where(SessaoClinica.turma == "8º semestre", SessaoClinica.dia_semana == 0)) is None
+        idoso = s.scalar(select(SessaoClinica).where(SessaoClinica.nome.contains("Idoso")))
+        assert idoso.idade_min == 60 and idoso.turma == "10º semestre"
 
 
 def test_agenda_semana_mostra_clinicas(cliente):
@@ -50,7 +55,7 @@ def test_agenda_semana_mostra_clinicas(cliente):
 
 def test_recepcao_cadastra_e_agenda_novo_paciente(cliente):
     entrar(cliente)
-    vid = vaga_de("Clínica Integrada VIII")
+    vid = vaga_de("Assistência Odontológica III")
     r = cliente.post(f"/agenda/vaga/{vid}/agendar", data={
         "novo_nome": "joana prado", "novo_telefone": "(11) 97777-1234", "novo_nascimento": "1985-06-01",
         "procedimento": "", "aluno": "Guilherme", "avisar": "1",
@@ -72,7 +77,7 @@ def test_faixa_etaria_e_encaixe(cliente):
         s.add(p)
         s.flush()
         pid = p.id
-    vid = vaga_de("Hebiatria")
+    vid = vaga_de("Adolescente")
     r = cliente.post(f"/agenda/vaga/{vid}/agendar", data={"paciente_id": pid})
     assert "fora da faixa etária" in r.text
     r = cliente.post(f"/agenda/vaga/{vid}/agendar", data={"paciente_id": pid, "encaixe": "1"})
@@ -104,7 +109,7 @@ def test_encontrar_horario_filtra_por_idade(cliente):
 def test_bloquear_dia_tira_do_bot(cliente):
     from app.agenda import vagas_disponiveis
     entrar(cliente)
-    vid = vaga_de("Clínica Integrada VIII")
+    vid = vaga_de("Assistência Odontológica III")
     cliente.post(f"/agenda/vaga/{vid}/bloqueio", data={"acao": "bloquear", "motivo": "Professora em congresso"})
     with sessao() as s:
         assert s.get(Vaga, vid).bloqueada

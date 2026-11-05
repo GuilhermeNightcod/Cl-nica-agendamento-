@@ -31,6 +31,8 @@ TEMPLATE_LEMBRETE = _env("TEMPLATE_LEMBRETE", "lembrete_consulta")
 TEMPLATE_IDIOMA = _env("TEMPLATE_IDIOMA", "pt_BR")
 # Template opcional enviado quando a RECEPÇÃO agenda (fora da janela de 24h). Vazio = não envia.
 TEMPLATE_AGENDAMENTO = _env("TEMPLATE_AGENDAMENTO")
+# Template opcional para o ATENDENTE iniciar conversa fora da janela de 24h. Vazio = não envia.
+TEMPLATE_CONTATO = _env("TEMPLATE_CONTATO")
 
 # --- Rotinas automáticas ---------------------------------------------------
 LEMBRETE_HORAS_ANTES = int(_env("LEMBRETE_HORAS_ANTES", "24"))
