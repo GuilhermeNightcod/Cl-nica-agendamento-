@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 from . import config
 from .models import Usuario
 
-PAPEIS = {"recepcao": "Recepção", "coordenacao": "Coordenação", "aluno": "Aluno"}
+PAPEIS = {"recepcao": "Recepção", "coordenacao": "Coordenação", "professor": "Professor", "aluno": "Aluno"}
 TENTATIVAS_MAX = 5
 BLOQUEIO = timedelta(minutes=15)
 SENHA_MIN = 8
@@ -62,7 +62,7 @@ def normalizar_login(login: str) -> str:
 
 
 def criar(s: Session, login: str, nome: str, papel: str, senha: str | None = None, criado_por: str | None = None,
-          trocar_senha: bool = True, turma: str | None = None) -> tuple[Usuario, str]:
+          trocar_senha: bool = True, turma: str | None = None, nome_grade: str | None = None) -> tuple[Usuario, str]:
     login = normalizar_login(login)
     if s.scalar(select(Usuario).where(Usuario.login == login)):
         raise ErroUsuario(f"Já existe o usuário “{login}”.")
@@ -72,10 +72,13 @@ def criar(s: Session, login: str, nome: str, papel: str, senha: str | None = Non
         raise ErroUsuario("Informe o nome da pessoa.")
     if papel == "aluno" and not (turma or "").strip():
         raise ErroUsuario("Informe a turma do aluno.")
+    if papel == "professor" and not (nome_grade or "").strip():
+        raise ErroUsuario("Escolha o nome do professor como aparece na grade das clínicas.")
     senha = senha or senha_provisoria()
     u = Usuario(login=login, nome=" ".join(nome.split())[:120], papel=papel, senha_hash=gerar_hash(senha),
                 trocar_senha=trocar_senha, criado_por=criado_por, ativo=True, tentativas_falhas=0,
-                turma=(turma or "").strip() or None if papel == "aluno" else None)
+                turma=(turma or "").strip() or None if papel == "aluno" else None,
+                nome_grade=(nome_grade or "").strip() or None if papel == "professor" else None)
     s.add(u)
     s.flush()
     return u, senha

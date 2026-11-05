@@ -47,7 +47,8 @@ Cada clínica pode ter **faixa etária**: Adolescente (10 a 19 anos), Criança (
 | **Indicadores** | Coordenação | Novos pacientes, % que agendou, faltas, ocupação de cada clínica, pacientes de dias bloqueados para remarcar, conversas abandonadas no WhatsApp |
 | **Clínicas** | Coordenação | Cadastrar e editar os dias de clínica de cada turma. Ao salvar, a agenda do semestre é refeita |
 | **Área do aluno** (celular) | Aluno | Vê as clínicas da **própria turma**, forma a **dupla**, agenda pacientes, altera horário e procedimento, remarca, marca presença e abre ficha, odontograma e prontuário **só dos pacientes da dupla** |
-| **Usuários** | Coordenação | Criar login para cada pessoa (recepção, coordenação ou aluno), **cadastrar a turma inteira colando a lista de nomes** (gera cartões de login para imprimir), gerar senha provisória, redefinir senha esquecida e desativar quem saiu |
+| **Área do professor** (celular) | Professor | Vê os dias das clínicas que **supervisiona** (todas as turmas), com pacientes, duplas, procedimentos e alertas de saúde; marca **veio/faltou** e abre ficha e odontograma desses pacientes |
+| **Usuários** | Coordenação | Criar login para cada pessoa (recepção, coordenação, professor ou aluno), **cadastrar a turma inteira colando a lista de nomes** (gera cartões de login para imprimir), gerar senha provisória, redefinir senha esquecida e desativar quem saiu |
 | **Acessos** | Coordenação | Quem entrou, abriu fichas, viu documentos ou mudou dados (LGPD) |
 
 ### Atendimentos (WhatsApp) 💬

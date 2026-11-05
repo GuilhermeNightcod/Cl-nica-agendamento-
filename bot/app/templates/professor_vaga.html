@@ -1,0 +1,32 @@
+{% extends "base.html" %}{% block titulo %}{{ v.inicio.strftime('%d/%m') }}{% endblock %}
+{% block conteudo %}
+{% set se = v.sessao %}
+<div class="aluno-pag" style="max-width:900px">
+  <a class="voltar" href="/professor">‹ Minhas clínicas</a>
+  <h1>{{ DIAS_SEMANA[v.inicio.weekday()] }}, {{ v.inicio.strftime('%d/%m') }}</h1>
+  <p class="sub" style="margin:0 0 14px"><b style="color:{{ cor }}">{{ se.turma }}</b>, das {{ v.inicio.strftime('%H:%M') }} às {{ v.fim.strftime('%H:%M') }}. {{ se.nome }}.</p>
+  {% if v.bloqueada %}<div class="aviso erro">Sem clínica neste dia: {{ v.motivo_bloqueio }}</div>{% endif %}
+  <div class="caixa" style="padding:6px 16px">
+    {% for a in ags %}
+    <div style="padding:12px 0;border-bottom:1px solid var(--linha)">
+      <div class="linha entre" style="flex-wrap:nowrap;align-items:flex-start">
+        <div>
+          <a href="/professor/paciente/{{ a.paciente.id }}" style="font-weight:700;font-size:var(--t-md)">{{ a.hora.strftime('%H:%M') + ' ' if a.hora }}{{ a.paciente.nome_exibicao }}</a>
+          <div class="suave" style="font-size:var(--t-sm)">{{ a.descricao }}{% if a.paciente.idade() is not none %}, {{ a.paciente.idade() }} anos{% endif %}</div>
+          <div style="font-size:var(--t-sm)">Dupla: <b>{{ a.aluno or 'sem dupla informada' }}</b></div>
+          {% if a.observacao %}<div class="suave" style="font-size:var(--t-sm)">Obs.: {{ a.observacao }}</div>{% endif %}
+          {% if a.paciente.observacoes %}<div style="font-size:var(--t-sm);color:var(--alerta)">Atenção: {{ a.paciente.observacoes }}</div>{% endif %}
+        </div>
+        <span class="tag {{ a.status }}">{{ a.status }}</span>
+      </div>
+      <div class="acoes-presenca" style="margin-top:8px;max-width:320px">
+        {% for st, rot in [('compareceu','Veio'),('faltou','Faltou')] %}
+        <form method="post" action="/professor/agendamento/{{ a.id }}/status"><input type="hidden" name="status" value="{{ st }}"><button class="btn peq {{ '' if a.status == st else 'sec' }}" style="width:100%">{{ rot }}</button></form>
+        {% endfor %}
+      </div>
+    </div>
+    {% else %}<p class="vazio">Nenhum paciente agendado neste dia.</p>{% endfor %}
+  </div>
+  <p class="suave" style="font-size:var(--t-sm)">{{ ags|length }} de {{ v.capacidade }} vagas ocupadas{% if se.duplas %}, {{ se.duplas }} duplas na turma{% endif %}.</p>
+</div>
+{% endblock %}

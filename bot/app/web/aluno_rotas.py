@@ -33,7 +33,7 @@ DIAS_A_FRENTE = 35
 
 def aluno(u: dict = Depends(usuario)) -> dict:
     if u["papel"] != "aluno":
-        raise rotas.Redirecionar("/agenda")
+        raise rotas.Redirecionar(rotas.AREA_PROPRIA.get(u["papel"], "/agenda"))
     if not u.get("turma"):
         raise HTTPException(403, "Seu usuário de aluno está sem turma. Peça à coordenação para informar.")
     return u

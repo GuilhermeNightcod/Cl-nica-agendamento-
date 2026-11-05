@@ -293,6 +293,7 @@ class Usuario(Base):
     papel: Mapped[str] = mapped_column(String(20), default="recepcao")  # recepcao | coordenacao | aluno
     turma: Mapped[str | None] = mapped_column(String(40))  # só para aluno: "8º semestre"
     dupla_id: Mapped[int | None] = mapped_column(ForeignKey("usuarios.id"))  # colega de dupla (aluno)
+    nome_grade: Mapped[str | None] = mapped_column(String(120))  # professor: nome como aparece nas clínicas
     ativo: Mapped[bool] = mapped_column(Boolean, default=True)
     trocar_senha: Mapped[bool] = mapped_column(Boolean, default=True)  # senha provisória
     tentativas_falhas: Mapped[int] = mapped_column(Integer, default=0)
@@ -303,7 +304,7 @@ class Usuario(Base):
 
     @property
     def papel_nome(self) -> str:
-        return {"coordenacao": "Coordenação", "aluno": "Aluno"}.get(self.papel, "Recepção")
+        return {"coordenacao": "Coordenação", "aluno": "Aluno", "professor": "Professor"}.get(self.papel, "Recepção")
 
 
 class RegistroAcesso(Base):

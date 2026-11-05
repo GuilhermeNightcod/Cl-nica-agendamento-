@@ -8,6 +8,11 @@ from .. import usuarios as U
 from ..db import sessao
 from ..models import RegistroAcesso, Usuario
 from .rotas import coordenacao, int_ou_none, ir, render, turmas, usuario
+from ..models import SessaoClinica
+
+
+def professores(s) -> list[str]:
+    return sorted({p for p in s.scalars(select(SessaoClinica.professor).distinct()) if p and not p.upper().startswith(("A DEFINIR", "EXEMPLO"))})
 
 router = APIRouter()
 
@@ -26,18 +31,19 @@ def lista(request: Request, u=Depends(coordenacao)):
 @router.get("/usuarios/novo", response_class=HTMLResponse)
 def form_novo(request: Request, u=Depends(coordenacao)):
     with sessao() as s:
-        return render(request, "usuario_form.html", alvo=None, papeis=U.PAPEIS, dados={}, turmas=turmas(s))
+        return render(request, "usuario_form.html", alvo=None, papeis=U.PAPEIS, dados={}, turmas=turmas(s), professores=professores(s))
 
 
 @router.post("/usuarios/novo", response_class=HTMLResponse)
 def criar(request: Request, nome: str = Form(""), login: str = Form(""), papel: str = Form("recepcao"), turma: str = Form(""),
-          u=Depends(coordenacao)):
+          nome_grade: str = Form(""), u=Depends(coordenacao)):
     with sessao() as s:
         try:
-            novo, senha = U.criar(s, login, nome, papel, criado_por=u["login"], turma=turma)
+            novo, senha = U.criar(s, login, nome, papel, criado_por=u["login"], turma=turma, nome_grade=nome_grade)
         except U.ErroUsuario as e:
             return render(request, "usuario_form.html", alvo=None, papeis=U.PAPEIS, erro=str(e), turmas=turmas(s),
-                          dados={"nome": nome, "login": login, "papel": papel, "turma": turma})
+                          professores=professores(s),
+                          dados={"nome": nome, "login": login, "papel": papel, "turma": turma, "nome_grade": nome_grade})
         _registrar(s, u["login"], "criou usuário", f"{novo.login} ({novo.papel_nome})")
         # a senha provisória aparece UMA vez, nesta tela; não vai para a URL nem para o registro
         return render(request, "usuario_senha.html", alvo=novo, senha=senha, criado=True)
@@ -49,12 +55,12 @@ def form_editar(request: Request, uid: int, u=Depends(coordenacao)):
         alvo = s.get(Usuario, uid)
         if not alvo:
             raise HTTPException(404)
-        return render(request, "usuario_form.html", alvo=alvo, papeis=U.PAPEIS, dados={}, turmas=turmas(s))
+        return render(request, "usuario_form.html", alvo=alvo, papeis=U.PAPEIS, dados={}, turmas=turmas(s), professores=professores(s))
 
 
 @router.post("/usuarios/{uid:int}")
 def editar(uid: int, nome: str = Form(""), papel: str = Form("recepcao"), ativo: str = Form(""), turma: str = Form(""),
-           u=Depends(coordenacao)):
+           nome_grade: str = Form(""), u=Depends(coordenacao)):
     with sessao() as s:
         alvo = s.get(Usuario, uid)
         if not alvo:
@@ -68,7 +74,10 @@ def editar(uid: int, nome: str = Form(""), papel: str = Form("recepcao"), ativo:
             return ir(f"/usuarios/{uid}", erro="Preencha o nome e o papel.")
         if papel == "aluno" and not turma.strip():
             return ir(f"/usuarios/{uid}", erro="Informe a turma do aluno.")
+        if papel == "professor" and not nome_grade.strip():
+            return ir(f"/usuarios/{uid}", erro="Escolha o nome do professor como aparece na grade.")
         alvo.turma = turma.strip() if papel == "aluno" else None
+        alvo.nome_grade = nome_grade.strip() if papel == "professor" else None
         mudancas = []
         if alvo.papel != papel:
             mudancas.append(f"papel {alvo.papel_nome} → {U.PAPEIS[papel]}")

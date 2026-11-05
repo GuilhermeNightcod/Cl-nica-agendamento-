@@ -103,7 +103,7 @@ def usuario(request: Request) -> dict:
             request.session.clear()
             raise Redirecionar("/entrar?" + urlencode({"erro": "Sua sessão foi encerrada. Entre novamente."}))
         u = {"id": cad.id, "login": cad.login, "papel": cad.papel, "nome": cad.nome, "trocar_senha": cad.trocar_senha,
-             "turma": cad.turma, "dupla_id": cad.dupla_id}
+             "turma": cad.turma, "dupla_id": cad.dupla_id, "nome_grade": cad.nome_grade}
     request.session["usuario"] = u
     if u["trocar_senha"] and request.url.path not in ("/minha-senha", "/sair"):
         raise Redirecionar("/minha-senha")
@@ -111,10 +111,13 @@ def usuario(request: Request) -> dict:
 
 
 def equipe(u: dict = Depends(usuario)) -> dict:
-    """Recepção e coordenação (alunos têm telas próprias em /aluno)."""
-    if u["papel"] == "aluno":
-        raise Redirecionar("/aluno")
+    """Recepção e coordenação (alunos e professores têm telas próprias)."""
+    if u["papel"] in AREA_PROPRIA:
+        raise Redirecionar(AREA_PROPRIA[u["papel"]])
     return u
+
+
+AREA_PROPRIA = {"aluno": "/aluno", "professor": "/professor"}
 
 
 def ids_da_dupla(u: dict) -> set[int]:
@@ -122,7 +125,10 @@ def ids_da_dupla(u: dict) -> set[int]:
 
 
 def pode_ver_paciente(s, u: dict, pid: int) -> bool:
-    """Equipe vê todos. Aluno só vê pacientes que têm (ou tiveram) consulta com a sua dupla."""
+    """Equipe vê todos. Aluno: pacientes da dupla. Professor: pacientes das clínicas que supervisiona."""
+    if u["papel"] == "professor":
+        return bool(s.scalar(select(Agendamento.id).join(Vaga).join(SessaoClinica).where(
+            Agendamento.paciente_id == pid, SessaoClinica.professor == (u.get("nome_grade") or "—")).limit(1)))
     if u["papel"] != "aluno":
         return True
     ids = ids_da_dupla(u)
@@ -131,7 +137,7 @@ def pode_ver_paciente(s, u: dict, pid: int) -> bool:
 
 
 def ficha_de(u: dict, pid: int) -> str:
-    return f"/aluno/paciente/{pid}" if u["papel"] == "aluno" else f"/pacientes/{pid}"
+    return f"{AREA_PROPRIA[u['papel']]}/paciente/{pid}" if u["papel"] in AREA_PROPRIA else f"/pacientes/{pid}"
 
 
 def coordenacao(u: dict = Depends(usuario)) -> dict:
@@ -175,8 +181,9 @@ def entrar(request: Request, login: str = Form(...), senha: str = Form(...), vol
             u = None
         if u:
             request.session["usuario"] = {"id": u.id, "login": u.login, "papel": u.papel, "nome": u.nome,
-                                          "trocar_senha": u.trocar_senha, "turma": u.turma, "dupla_id": u.dupla_id}
-            destino_padrao = "/aluno" if u.papel == "aluno" else "/agenda"
+                                          "trocar_senha": u.trocar_senha, "turma": u.turma, "dupla_id": u.dupla_id,
+                                          "nome_grade": u.nome_grade}
+            destino_padrao = AREA_PROPRIA.get(u.papel, "/agenda")
             s.add(RegistroAcesso(usuario=u.login, acao="entrou no sistema"))
     if not u:
         return ir("/entrar", erro=erro, voltar=voltar)
@@ -194,7 +201,7 @@ def sair(request: Request):
 @router.get("/")
 def inicio(request: Request):
     u = request.session.get("usuario") or {}
-    return ir("/aluno" if u.get("papel") == "aluno" else "/agenda")
+    return ir(AREA_PROPRIA.get(u.get("papel"), "/agenda"))
 
 
 # ============================================================ utilidades

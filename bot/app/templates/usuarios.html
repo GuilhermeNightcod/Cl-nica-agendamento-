@@ -11,7 +11,7 @@
     <tr style="{{ 'opacity:.55' if not t.ativo }}">
       <td><b>{{ t.nome }}</b>{% if t.login == usuario.login %} <span class="tag">você</span>{% endif %}</td>
       <td>{{ t.login }}</td>
-      <td><span class="tag {{ 'confirmado' if t.papel == 'coordenacao' }}">{{ t.papel_nome }}</span>{% if t.turma %}<br><small>{{ t.turma }}</small>{% endif %}</td>
+      <td><span class="tag {{ 'confirmado' if t.papel == 'coordenacao' }}">{{ t.papel_nome }}</span>{% if t.turma %}<br><small>{{ t.turma }}</small>{% endif %}{% if t.nome_grade %}<br><small>clínicas de {{ t.nome_grade }}</small>{% endif %}</td>
       <td>{% if not t.ativo %}<span class="tag cancelado">desativado</span>
           {% elif t.bloqueado_ate and t.bloqueado_ate > now %}<span class="tag faltou">bloqueado por tentativas</span>
           {% elif t.trocar_senha %}<span class="tag agendado">aguardando 1º acesso</span>
@@ -24,5 +24,6 @@
 </div>
 <p class="suave" style="font-size:var(--t-sm);max-width:75ch">Recepção: agenda, atendimentos, pacientes, odontograma, prontuário e indicadores.
 Coordenação: tudo isso, mais configurar clínicas, gerenciar usuários e ver o registro de acessos.
+Professor: vê os dias das clínicas que supervisiona, com pacientes, duplas e procedimentos; marca presença e abre a ficha.
 Aluno: pelo celular, vê as clínicas da própria turma e agenda, altera e remarca os pacientes da sua dupla.</p>
 {% endblock %}

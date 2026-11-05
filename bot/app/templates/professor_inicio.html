@@ -1,0 +1,29 @@
+{% extends "base.html" %}{% block titulo %}Minhas clínicas{% endblock %}
+{% block conteudo %}
+<div class="aluno-pag">
+  <div class="saudacao" style="margin-bottom:16px">
+    <h1>Olá, {{ usuario.nome.split()[0] if not usuario.nome.startswith('Prof') else usuario.nome.split()[1] }}</h1>
+    <p class="sub" style="margin:0">Clínicas que você supervisiona:
+      {% for c in clinicas %}{{ c.dia_nome }} ({{ c.turma.split(' ')[0] }}){{ ', ' if not loop.last }}{% else %}nenhuma{% endfor %}</p>
+  </div>
+  <h2>Próximos dias <span class="suave" style="font-weight:400;font-size:var(--t-sm)">{{ semanas }} semanas</span></h2>
+  {% for v in vagas %}
+    {% set ativos = v.ativos|sort(attribute='inicio') %}
+    {% set cor = cores.get(v.sessao.turma, '#1f4f47') %}
+    <a class="cartao-dia {{ 'hoje' if v.inicio.date() == hoje }} {{ 'bloq' if v.bloqueada }}" href="/professor/vaga/{{ v.id }}" style="border-left-color:{{ 'var(--gengiva)' if v.inicio.date() == hoje else cor }}">
+      <div class="topo">
+        <span class="data">{{ DIAS_SEMANA[v.inicio.weekday()] }} {{ v.inicio.strftime('%d/%m') }}<small>{{ v.inicio.strftime('%H:%M') }}–{{ v.fim.strftime('%H:%M') }}</small></span>
+        <span class="livres" style="color:{{ cor }}">{{ v.sessao.turma }}</span>
+      </div>
+      <div class="disc">{{ v.sessao.nome }}</div>
+      {% if v.bloqueada %}<small style="color:var(--erro)">Sem clínica: {{ v.motivo_bloqueio }}</small>
+      {% else %}
+        <div class="linha" style="gap:10px"><span class="boxes" style="color:{{ cor }}">{% for i in range([v.capacidade, ativos|length]|max) %}<i class="{{ 'encaixe' if i >= v.capacidade else ('ocupado' if i < ativos|length) }}"></i>{% endfor %}</span>
+          <small>{{ ativos|length }} paciente{{ 's' if ativos|length != 1 }}</small></div>
+        {% if ativos %}<ul class="meus">{% for a in ativos[:6] %}<li>{% if a.hora %}<b>{{ a.hora.strftime('%H:%M') }}</b>{% endif %}{{ a.paciente.nome_exibicao }}, {{ a.descricao }}</li>{% endfor %}{% if ativos|length > 6 %}<li class="suave">e mais {{ ativos|length - 6 }}</li>{% endif %}</ul>{% endif %}
+      {% endif %}
+    </a>
+  {% else %}<div class="caixa vazio">Nenhum dia de clínica nas próximas semanas.</div>{% endfor %}
+  {% if semanas < 8 %}<a class="btn sec grande" href="/professor?semanas={{ semanas + 2 }}">Ver mais semanas</a>{% endif %}
+</div>
+{% endblock %}

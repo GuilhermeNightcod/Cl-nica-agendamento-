@@ -8,9 +8,12 @@
     <div class="campos">
       <div><label for="nome">Nome completo</label><input id="nome" name="nome" value="{{ alvo.nome if alvo else dados.get('nome', '') }}" required autofocus></div>
       {% if not alvo %}<div><label for="login">Usuário (para entrar)</label><input id="login" name="login" value="{{ dados.get('login', '') }}" placeholder="ex.: ana.souza" required autocomplete="off" autocapitalize="none"></div>{% endif %}
-      <div><label for="papel">Papel</label><select id="papel" name="papel" onchange="document.getElementById('campo-turma').hidden = this.value !== 'aluno'">{% for k, v in papeis.items() %}<option value="{{ k }}" {{ 'selected' if (alvo.papel if alvo else dados.get('papel', 'recepcao')) == k }}>{{ v }}</option>{% endfor %}</select></div>
+      <div><label for="papel">Papel</label><select id="papel" name="papel" onchange="document.getElementById('campo-turma').hidden = this.value !== 'aluno'; document.getElementById('campo-prof').hidden = this.value !== 'professor'">{% for k, v in papeis.items() %}<option value="{{ k }}" {{ 'selected' if (alvo.papel if alvo else dados.get('papel', 'recepcao')) == k }}>{{ v }}</option>{% endfor %}</select></div>
       <div id="campo-turma" {{ '' if (alvo.papel if alvo else dados.get('papel')) == 'aluno' else 'hidden' }}><label for="turma">Turma do aluno</label>
         <select id="turma" name="turma"><option value="">—</option>{% for t in turmas %}<option {{ 'selected' if (alvo.turma if alvo else dados.get('turma')) == t }}>{{ t }}</option>{% endfor %}</select></div>
+      <div id="campo-prof" {{ '' if (alvo.papel if alvo else dados.get('papel')) == 'professor' else 'hidden' }}><label for="nome_grade">Nome na grade das clínicas</label>
+        <select id="nome_grade" name="nome_grade"><option value="">—</option>{% for n in professores %}<option {{ 'selected' if (alvo.nome_grade if alvo else dados.get('nome_grade')) == n }}>{{ n }}</option>{% endfor %}</select>
+        <small>É assim que o sistema sabe quais clínicas ele supervisiona.</small></div>
     </div>
     {% if alvo %}<label class="check" style="margin-bottom:16px"><input type="checkbox" name="ativo" value="1" {{ 'checked' if alvo.ativo }}> Pode entrar no sistema (desmarque quando a pessoa sair da clínica)</label>{% endif %}
     <button class="btn">{{ 'Salvar' if alvo else 'Criar usuário' }}</button>
