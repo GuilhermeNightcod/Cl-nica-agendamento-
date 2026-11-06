@@ -54,6 +54,7 @@ printf 'Host github.com\n  IdentityFile ~/.ssh/github_deploy\n' >> ~/.ssh/config
 ```bash
 git clone git@github.com:GuilhermeNightcod/Cl-nica-agendamento-.git /root/central-odonto
 ```
+Na primeira vez o terminal pergunta *"Are you sure you want to continue connecting?"*: digite `yes` e Enter.
 
 ## 4. Instalar
 
@@ -100,6 +101,8 @@ cd /root/central-odonto && git pull && docker compose --profile producao up -d -
 ```
 
 ## 8. Comandos úteis
+
+Rode sempre dentro da pasta do projeto: `cd /root/central-odonto`.
 
 | Para | Comando |
 |---|---|
