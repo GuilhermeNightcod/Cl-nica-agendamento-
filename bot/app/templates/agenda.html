@@ -106,7 +106,7 @@
           {% if v.bloqueada %}<div class="lot" style="color:var(--erro);font-weight:700">Bloqueado: {{ v.motivo_bloqueio }}</div>
           {% else %}
             <div class="boxes" title="{{ ativos|length }} de {{ v.capacidade }} vagas">{% for i in range([v.capacidade, ativos|length]|max) %}<i class="{{ 'encaixe' if i >= v.capacidade else ('ocupado' if i < ativos|length) }}"></i>{% endfor %}</div>
-            <div class="lot">{{ ativos|length }}/{{ v.capacidade }} vagas{% if visao == 'dia' and v.sessao.duplas %}, {{ v.sessao.duplas }} duplas{% endif %}</div>
+            <div class="lot">{{ ativos|length }}/{{ v.capacidade }} vagas{% if visao == 'dia' and v.sessao.duplas %}, {{ v.sessao.rotulo_equipes }}{% endif %}</div>
           {% endif %}
           {% for a in ativos %}
             {% if visao == 'dia' %}

@@ -124,7 +124,8 @@ class SessaoClinica(Base):
     vagas: Mapped[int] = mapped_column(Integer, default=10)
     espaco_id: Mapped[int | None] = mapped_column(ForeignKey("espacos_clinicos.id"))
     alunos: Mapped[int | None] = mapped_column(Integer)  # alunos da turma nesta clínica
-    pacientes_por_dupla: Mapped[int] = mapped_column(Integer, default=1)
+    pacientes_por_dupla: Mapped[int] = mapped_column(Integer, default=1)  # pacientes por equipe (box)
+    alunos_por_box: Mapped[int] = mapped_column(Integer, default=2)  # 2 = dupla, 3 = trio (ex.: cirurgia)
     idade_min: Mapped[int | None] = mapped_column(Integer)
     idade_max: Mapped[int | None] = mapped_column(Integer)
     ativa: Mapped[bool] = mapped_column(Boolean, default=True)
@@ -134,8 +135,16 @@ class SessaoClinica(Base):
 
     @property
     def duplas(self) -> int | None:
-        """Cada dupla de alunos ocupa um box."""
-        return (self.alunos + 1) // 2 if self.alunos else None
+        """Equipes de alunos (duplas ou trios). Cada equipe ocupa um box."""
+        n = max(2, self.alunos_por_box or 2)
+        return -(-self.alunos // n) if self.alunos else None
+
+    @property
+    def rotulo_equipes(self) -> str:
+        if not self.duplas:
+            return ""
+        nome = "trio" if (self.alunos_por_box or 2) == 3 else ("dupla" if (self.alunos_por_box or 2) == 2 else "equipe")
+        return f"{self.duplas} {nome}{'s' if self.duplas != 1 else ''}"
 
     def recalcular_vagas(self) -> None:
         if self.duplas:

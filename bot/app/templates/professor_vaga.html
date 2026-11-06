@@ -27,6 +27,6 @@
     </div>
     {% else %}<p class="vazio">Nenhum paciente agendado neste dia.</p>{% endfor %}
   </div>
-  <p class="suave" style="font-size:var(--t-sm)">{{ ags|length }} de {{ v.capacidade }} vagas ocupadas{% if se.duplas %}, {{ se.duplas }} duplas na turma{% endif %}.</p>
+  <p class="suave" style="font-size:var(--t-sm)">{{ ags|length }} de {{ v.capacidade }} vagas ocupadas{% if se.duplas %}, {{ se.rotulo_equipes }} na turma{% endif %}.</p>
 </div>
 {% endblock %}

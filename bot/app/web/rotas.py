@@ -849,6 +849,7 @@ async def salvar_clinica(request: Request, sid: int | None = None, u=Depends(coo
         se.vagas = max(1, int_ou_none(f.get("vagas")) or 1)
         se.alunos = int_ou_none(f.get("alunos"))
         se.pacientes_por_dupla = max(1, int_ou_none(f.get("pacientes_por_dupla")) or 1)
+        se.alunos_por_box = 3 if int_ou_none(f.get("alunos_por_box")) == 3 else 2
         se.recalcular_vagas()
         nome_espaco = str(f.get("espaco", "")).strip()
         if nome_espaco:

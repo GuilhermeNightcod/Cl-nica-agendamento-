@@ -1,11 +1,11 @@
-turma;dia_semana;inicio;fim;professor;nome_clinica;especialidades;procedimentos;vagas;idade_min;idade_max;espaco;alunos;pacientes_por_dupla
-6º semestre;seg;18:00;21:30;Matheus Rodrigues;Clínica de Propedêutica e Biópsia Bucal (3878584);triagem,estomatologia;Anamnese, exame clínico, diagnóstico e biópsia;12;;;Clínica Odontocase;23;1
-6º semestre;qua;18:00;21:30;Jhenifer Pinheiro;Clínica Integrada de Assistência Odontológica I (3878586);clinica_geral,periodontia;Restaurações, raspagem e procedimentos gerais;12;;;Clínica Odontocase;23;1
-6º semestre;qui;18:00;21:30;Eliel de Carvalho;Clínica de Propedêutica Cirúrgica Odontológica (3878589);cirurgia;Exodontias simples;12;;;Clínica Odontocase;23;1
-8º semestre;ter;18:00;21:30;Jhenifer Pinheiro;Clínica Integrada de Assistência Odontológica III (3878596);triagem,endodontia;Anamnese, capeamento pulpar e acesso;7;;;Clínica Odontocase;13;1
-8º semestre;qua;18:00;21:30;Daniel Cardoso;Clínica Integrada de Atenção ao Adolescente (2668181);hebiatria,endodontia,clinica_geral;Procedimentos de endo e gerais em adolescentes;7;10;19;Clínica Odontocase;13;1
-8º semestre;qui;18:00;21:30;Thaynara Lima;Clínica Integrada de Atenção à Criança I (3784837);odontopediatria;Atendimento infantil;7;0;12;Clínica Odontocase;13;1
-8º semestre;sex;18:00;21:30;Rosemar;Clínica Integrada de Reabilitação Oral I (3784839);protese,cirurgia,clinica_geral;Prótese quando houver, geralmente cirurgia e geral;7;;;Clínica Odontocase;13;1
-10º semestre;seg;18:00;21:30;Daniel Cardoso;Clínica Integrada de Atenção ao Adolescente (2668181);hebiatria,endodontia,clinica_geral;Procedimentos em adolescentes;6;10;19;Clínica Odontocase;12;1
-10º semestre;ter;18:00;21:30;Lucas Cardoso;Clínica Integrada de Atenção ao Idoso (3784842);geriatria,protese,clinica_geral;Prótese e procedimentos gerais em idosos;6;60;;Clínica Odontocase;12;1
-10º semestre;sex;18:00;21:30;Thaynara Lima;Clínica Integrada de Atenção à Pessoa com Deficiência (3784843);pcd,clinica_geral;Atendimento a pessoas com deficiência;6;;;Clínica Odontocase;12;1
+turma;dia_semana;inicio;fim;professor;nome_clinica;especialidades;procedimentos;vagas;idade_min;idade_max;espaco;alunos;pacientes_por_dupla;alunos_por_box
+6º semestre;seg;18:00;21:30;Matheus Rodrigues;Clínica de Propedêutica e Biópsia Bucal (3878584);triagem,estomatologia;Anamnese, exame clínico, diagnóstico e biópsia;12;;;Clínica Odontocase;23;1;2
+6º semestre;qua;18:00;21:30;Jhenifer Pinheiro;Clínica Integrada de Assistência Odontológica I (3878586);clinica_geral,periodontia;Restaurações, raspagem e procedimentos gerais;12;;;Clínica Odontocase;23;1;2
+6º semestre;qui;18:00;21:30;Eliel de Carvalho;Clínica de Propedêutica Cirúrgica Odontológica (3878589);cirurgia;Exodontias simples;8;;;Clínica Odontocase;23;1;3
+8º semestre;ter;18:00;21:30;Jhenifer Pinheiro;Clínica Integrada de Assistência Odontológica III (3878596);triagem,endodontia;Anamnese, capeamento pulpar e acesso;7;;;Clínica Odontocase;13;1;2
+8º semestre;qua;18:00;21:30;Daniel Cardoso;Clínica Integrada de Atenção ao Adolescente (2668181);hebiatria,endodontia,clinica_geral;Procedimentos de endo e gerais em adolescentes;7;10;19;Clínica Odontocase;13;1;2
+8º semestre;qui;18:00;21:30;Thaynara Lima;Clínica Integrada de Atenção à Criança I (3784837);odontopediatria;Atendimento infantil;7;0;12;Clínica Odontocase;13;1;2
+8º semestre;sex;18:00;21:30;Rosemar;Clínica Integrada de Reabilitação Oral I (3784839);protese,cirurgia,clinica_geral;Prótese quando houver, geralmente cirurgia e geral;7;;;Clínica Odontocase;13;1;2
+10º semestre;seg;18:00;21:30;Daniel Cardoso;Clínica Integrada de Atenção ao Adolescente (2668181);hebiatria,endodontia,clinica_geral;Procedimentos em adolescentes;6;10;19;Clínica Odontocase;12;1;2
+10º semestre;ter;18:00;21:30;Lucas Cardoso;Clínica Integrada de Atenção ao Idoso (3784842);geriatria,protese,clinica_geral;Prótese e procedimentos gerais em idosos;6;60;;Clínica Odontocase;12;1;2
+10º semestre;sex;18:00;21:30;Thaynara Lima;Clínica Integrada de Atenção à Pessoa com Deficiência (3784843);pcd,clinica_geral;Atendimento a pessoas com deficiência;6;;;Clínica Odontocase;12;1;2

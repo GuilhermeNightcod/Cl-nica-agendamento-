@@ -202,3 +202,15 @@ def test_duplas_boxes_e_turmas_na_mesma_clinica(cliente):
         terca = [u for u in uso_de_boxes(list(s.scalars(select(SessaoClinica)))) if u["dia"] == 1][0]
         assert terca["duplas"] == 21 and terca["excede"] and terca["turmas"] == ["8º semestre", "10º semestre"]
     assert "falta 1 box" in cliente.get("/clinicas").text or "Uso de boxes" in cliente.get("/clinicas").text
+
+
+def test_trio_na_cirurgia_do_6(cliente):
+    from app.agenda import uso_de_boxes
+    with sessao() as s:
+        cir = s.scalar(select(SessaoClinica).where(SessaoClinica.turma == "6º semestre", SessaoClinica.dia_semana == 3))
+        assert cir.alunos_por_box == 3 and cir.duplas == 8 and cir.vagas == 8 and cir.rotulo_equipes == "8 trios"
+        quinta = [u for u in uso_de_boxes(list(s.scalars(select(SessaoClinica)))) if u["dia"] == 3][0]
+        assert quinta["duplas"] == 8 + 7 and not quinta["excede"]  # 15 de 15 boxes
+    with sessao() as s:
+        logins = {u.login: u.papel for u in s.scalars(select(__import__("app.models", fromlist=["Usuario"]).Usuario))}
+    assert logins.get("larissa") == "recepcao" and logins.get("herika") == "recepcao"

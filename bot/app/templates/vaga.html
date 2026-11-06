@@ -27,7 +27,7 @@
     <div><dt>Áreas</dt><dd>{{ se.areas }}</dd></div>
     {% if se.procedimentos_texto %}<div><dt>Procedimentos</dt><dd style="font-weight:400">{{ se.procedimentos_texto }}</dd></div>{% endif %}
     <div><dt>Idade</dt><dd>{{ se.faixa_etaria }}</dd></div>
-    <div><dt>Vagas</dt><dd><span class="boxes" style="color:{{ cor_turma }};display:inline-flex;vertical-align:-1px;margin-right:6px">{% for i in range([v.capacidade, v.ativos|length]|max) %}<i class="{{ 'encaixe' if i >= v.capacidade else ('ocupado' if i < v.ativos|length) }}"></i>{% endfor %}</span>{{ v.ativos|length }} de {{ v.capacidade }}{% if se.duplas %} ({{ se.duplas }} duplas){% endif %}</dd></div>
+    <div><dt>Vagas</dt><dd><span class="boxes" style="color:{{ cor_turma }};display:inline-flex;vertical-align:-1px;margin-right:6px">{% for i in range([v.capacidade, v.ativos|length]|max) %}<i class="{{ 'encaixe' if i >= v.capacidade else ('ocupado' if i < v.ativos|length) }}"></i>{% endfor %}</span>{{ v.ativos|length }} de {{ v.capacidade }}{% if se.duplas %} ({{ se.rotulo_equipes }}){% endif %}</dd></div>
     {% if se.espaco %}<div><dt>Clínica física</dt><dd>{{ se.espaco.nome }}{% if se.espaco.boxes %}, {{ se.espaco.boxes }} boxes{% endif %}</dd></div>{% endif %}
   </dl>
 </div>

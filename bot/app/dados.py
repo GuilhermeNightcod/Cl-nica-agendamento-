@@ -118,6 +118,7 @@ def carregar(s: Session) -> dict:
                     espaco=espacos.get(l.get("espaco", "")),
                     alunos=_int(l.get("alunos", "")),
                     pacientes_por_dupla=_int(l.get("pacientes_por_dupla", "")) or 1,
+                    alunos_por_box=_int(l.get("alunos_por_box", "")) or 2,
                 )
             )
             s.flush()

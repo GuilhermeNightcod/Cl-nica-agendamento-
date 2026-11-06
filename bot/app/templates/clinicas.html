@@ -20,7 +20,7 @@
 <div class="grade2">
   <div class="caixa">
     <h2>Clínicas físicas e boxes</h2>
-    <p class="suave" style="margin-top:-6px">Cada dupla de alunos ocupa um box. Quando duas turmas atendem na mesma clínica no mesmo horário, as duplas somam.</p>
+    <p class="suave" style="margin-top:-6px">Cada dupla (ou trio) de alunos ocupa um box. Quando duas turmas atendem na mesma clínica no mesmo horário, as equipes somam.</p>
     {% for e in espacos %}
     <form class="espaco-form" method="post" action="/clinicas/espaco" style="margin-bottom:8px">
       <input type="hidden" name="espaco_id" value="{{ e.id }}">
@@ -38,7 +38,7 @@
   <div class="caixa tabela">
     <h2>Uso de boxes por dia</h2>
     <table class="uso-tabela">
-      <tr><th>Dia</th><th>Clínica física</th><th>Turmas juntas</th><th>Duplas</th><th></th></tr>
+      <tr><th>Dia</th><th>Clínica física</th><th>Turmas juntas</th><th>Equipes</th><th></th></tr>
       {% for u in boxes %}
       <tr>
         <td><b>{{ DIAS_SEMANA[u.dia] }}</b></td>
@@ -69,8 +69,8 @@
       <td>{{ se.nome }}{% if se.espaco %}<br><small>{{ se.espaco.nome }}</small>{% endif %}</td>
       <td>{{ se.professor }}</td>
       <td><small>{{ se.areas }}</small></td>
-      <td>{% if se.alunos %}{{ se.alunos }}<br><small>{{ se.duplas }} duplas</small>{% else %}<span class="tag agendado">informar</span>{% endif %}</td>
-      <td>{{ se.vagas }}{% if se.alunos %}<br><small>{{ se.pacientes_por_dupla }} por dupla</small>{% endif %}</td>
+      <td>{% if se.alunos %}{{ se.alunos }}<br><small>{{ se.rotulo_equipes }}</small>{% else %}<span class="tag agendado">informar</span>{% endif %}</td>
+      <td>{{ se.vagas }}{% if se.alunos %}<br><small>{{ se.pacientes_por_dupla }} por {{ 'trio' if se.alunos_por_box == 3 else 'dupla' }}</small>{% endif %}</td>
       <td><small>{{ se.faixa_etaria }}</small></td>
       <td><a class="btn sec peq" href="/clinicas/{{ se.id }}">Editar</a></td>
     </tr>
