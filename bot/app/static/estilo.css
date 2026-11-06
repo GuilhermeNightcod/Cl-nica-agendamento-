@@ -1,27 +1,40 @@
 /* ==========================================================================
-   Central Odonto — identidade visual
-   Cores do consultório: verde de campo cirúrgico, rosa de gengiva, esmalte frio.
-   Fonte única: Atkinson Hyperlegible Next (legibilidade de nomes e horários).
+   centralodonto — identidade visual (guia de marca)
+   Símbolo: os dois incisivos centrais, um verde e um rosa, com um respiro no centro.
+   Fonte única: Nunito (Black nos títulos e em "central", Regular nos textos).
+   Acessibilidade: verde e rosa da marca são para o símbolo, destaques grandes e
+   marcadores; texto pequeno usa Verde Fundo ou as variantes "-texto" (contraste ≥ 4,5).
    ========================================================================== */
 @import url("/static/fontes/fonte.css");
 
 :root {
-  /* paleta */
-  --campo: #1f4f47;          /* verde campo cirúrgico: menu e ações principais */
-  --campo-escuro: #163a34;
-  --campo-claro: #e4efec;    /* seleção, item ativo */
-  --gengiva: #c24d6b;        /* destaque: hoje, fila, foco */
-  --gengiva-claro: #f8e6ec;
-  --esmalte: #f5f8f7;        /* fundo */
-  --tinta: #1b2826;          /* texto */
-  --suave: #5c6e6a;          /* texto secundário */
-  --linha: #d5e0dc;          /* bordas */
+  /* paleta do guia de marca */
+  --verde-incisivo: #22a06b;  /* dente esquerdo do símbolo, confirmações */
+  --rosa-gengiva: #ff4f9a;    /* dente direito do símbolo, destaques */
+  --verde-fundo: #0e4d3a;     /* textos e fundos escuros */
+  --rosa-algodao: #ffe1ee;    /* fundos suaves e cartões */
+  --menta: #d6f5e3;           /* status de sucesso e apoio */
+  --branco-esmalte: #fff8fb;  /* fundo principal */
+  /* variantes para texto pequeno (contraste ≥ 4,5 sobre o fundo) */
+  --verde-texto: #15704a;
+  --rosa-texto: #b8236e;
+
+  /* papéis na interface */
+  --campo: var(--verde-fundo);   /* menu e ações principais */
+  --campo-escuro: #0a3a2c;
+  --campo-claro: var(--menta);   /* seleção, item ativo */
+  --gengiva: var(--rosa-gengiva);
+  --gengiva-claro: var(--rosa-algodao);
+  --esmalte: var(--branco-esmalte);
+  --tinta: var(--verde-fundo);   /* texto */
+  --suave: #557369;              /* texto secundário */
+  --linha: #ecdde5;              /* bordas (rosado, combina com o fundo) */
   --branco: #ffffff;
 
   /* estados */
-  --ok: #1f7a55;     --ok-claro: #ddf3e8;
-  --alerta: #9a6700; --alerta-claro: #fff2cc;
-  --erro: #b3261e;   --erro-claro: #fce4e2;
+  --ok: var(--verde-texto);  --ok-claro: var(--menta);
+  --alerta: #8a5a00;         --alerta-claro: #fff1d6;
+  --erro: #b3261e;           --erro-claro: #fce4e2;
 
   /* turmas (papel articular: carbono azul, verde, ameixa) */
   --turma-1: #3557c9; --turma-2: #2e8a6e; --turma-3: #8e3f82;
@@ -41,17 +54,25 @@
 html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0; background: var(--esmalte); color: var(--tinta);
-  font-family: "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", system-ui, sans-serif;
+  font-family: "Nunito", system-ui, sans-serif;
   font-size: var(--t-md); line-height: 1.5; font-variant-numeric: tabular-nums;
 }
 a { color: var(--campo); text-underline-offset: 3px; }
 a:hover { color: var(--campo-escuro); }
-:focus-visible { outline: 3px solid var(--gengiva); outline-offset: 2px; border-radius: 4px; }
+:focus-visible { outline: 3px solid var(--rosa-texto); outline-offset: 2px; border-radius: 4px; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; scroll-behavior: auto !important; } }
 
-h1 { font-size: var(--t-2xl); line-height: 1.15; letter-spacing: -0.015em; margin: 0 0 4px; font-weight: 750; }
-h2 { font-size: var(--t-lg); line-height: 1.25; margin: 0 0 12px; font-weight: 700; letter-spacing: -0.005em; }
-h3 { font-size: var(--t-md); margin: 0 0 8px; font-weight: 700; }
+h1 { font-size: var(--t-2xl); line-height: 1.15; letter-spacing: -0.01em; margin: 0 0 4px; font-weight: 900; }
+h2 { font-size: var(--t-lg); line-height: 1.25; margin: 0 0 12px; font-weight: 800; }
+h3 { font-size: var(--t-md); margin: 0 0 8px; font-weight: 800; }
+b, strong { font-weight: 800; }
+
+/* ---------------------------------------------------------------- logo */
+.logo { display: inline-flex; align-items: center; gap: .45em; color: var(--verde-fundo); line-height: 1; }
+.logo svg { flex: none; display: block; }
+.logo .palavra { font-weight: 400; letter-spacing: -0.01em; font-size: 1.25em; }
+.logo .palavra b { font-weight: 900; }
+.logo-claro { color: #fff; }
 .sub { color: var(--suave); margin: 0 0 20px; max-width: 75ch; }
 small, .suave { color: var(--suave); }
 .vazio { color: var(--suave); }
@@ -59,21 +80,19 @@ small, .suave { color: var(--suave); }
 /* ---------------------------------------------------------------- menu lateral */
 .lateral {
   position: fixed; inset: 0 auto 0 0; width: 232px; z-index: 10; overflow-y: auto;
-  background: var(--campo); color: #cfe0db; display: flex; flex-direction: column; gap: 2px; padding: 16px 12px;
+  background: var(--verde-fundo); color: #cfe7dd; display: flex; flex-direction: column; gap: 2px; padding: 16px 12px;
 }
-.lateral .marca { display: flex; gap: 10px; align-items: center; color: #fff; padding: 4px 10px 20px; text-decoration: none; }
-.lateral .marca svg { flex: none; }
-.lateral .marca span { font-weight: 700; font-size: var(--t-sm); line-height: 1.25; }
-.lateral .marca small { display: block; color: #9fc2b9; font-weight: 400; font-size: var(--t-xs); }
+.lateral .marca { display: block; color: #fff; padding: 6px 10px 22px; text-decoration: none; font-size: 15px; }
+.lateral .marca small { display: block; color: #a9cfc0; font-weight: 600; font-size: var(--t-xs); margin-top: 8px; line-height: 1.3; }
 .lateral a.nav { color: #d7e6e2; text-decoration: none; display: flex; align-items: center; gap: 12px; padding: 9px 12px; border-radius: var(--r-controle); font-size: var(--t-sm); font-weight: 500; }
 .lateral a.nav:hover { background: rgba(255,255,255,.08); color: #fff; }
-.lateral a.nav.ativo { background: var(--esmalte); color: var(--campo); font-weight: 700; }
-.lateral .selo { margin-left: auto; background: var(--gengiva); color: #fff; border-radius: 99px; font-size: var(--t-xs); font-weight: 700; padding: 0 8px; min-width: 22px; text-align: center; }
+.lateral a.nav.ativo { background: var(--branco-esmalte); color: var(--verde-fundo); font-weight: 800; box-shadow: inset 3px 0 0 var(--rosa-gengiva); }
+.lateral .selo { margin-left: auto; background: var(--rosa-texto); color: #fff; border-radius: 99px; font-size: var(--t-xs); font-weight: 700; padding: 0 8px; min-width: 22px; text-align: center; }
 .lateral .grupo { color: #8fb3aa; font-size: var(--t-xs); padding: 16px 12px 4px; }
 .lateral .rodape { margin-top: auto; border-top: 1px solid rgba(255,255,255,.12); padding-top: 12px; }
 .lateral .quem { display: flex; gap: 10px; align-items: center; padding: 6px 10px; color: #fff; font-size: var(--t-sm); }
-.lateral .quem b { width: 32px; height: 32px; border-radius: 50%; background: var(--gengiva); display: flex; align-items: center; justify-content: center; font-size: var(--t-sm); }
-.lateral .quem small { display: block; color: #9fc2b9; font-size: var(--t-xs); }
+.lateral .quem b { width: 32px; height: 32px; border-radius: 50%; background: var(--rosa-texto); display: flex; align-items: center; justify-content: center; font-size: var(--t-sm); }
+.lateral .quem small { display: block; color: #a9cfc0; font-size: var(--t-xs); }
 main.com-lateral { margin-left: 232px; }
 main { padding: 28px 32px 48px; max-width: 1440px; }
 main.largo { max-width: none; }
@@ -155,9 +174,9 @@ form.inline { display: inline; }
 
 /* ---------------------------------------------------------------- login */
 .tela-entrar { min-height: 100vh; display: grid; grid-template-columns: minmax(320px, 46%) 1fr; }
-.tela-entrar .arte { background: var(--campo); color: #e2efeb; padding: 48px; display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; }
-.tela-entrar .arte h1 { color: #fff; font-size: 40px; max-width: 12ch; font-weight: 750; }
-.tela-entrar .arte p { max-width: 38ch; color: #b9d3cc; }
+.tela-entrar .arte { background: var(--verde-fundo); color: #e2efeb; padding: 48px; display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; }
+.tela-entrar .arte h1 { color: #fff; font-size: 42px; max-width: 13ch; font-weight: 900; letter-spacing: -0.015em; }
+.tela-entrar .arte p { max-width: 40ch; color: #bcdccf; font-size: 17px; }
 .tela-entrar .arte svg.arcada { position: absolute; left: 50%; transform: translateX(-50%); bottom: -24px; width: min(92%, 560px); opacity: .95; }
 .tela-entrar .form { display: flex; align-items: center; justify-content: center; padding: 32px; }
 .tela-entrar form { width: 100%; max-width: 340px; }

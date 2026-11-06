@@ -43,7 +43,7 @@ async def ciclo_de_vida(app: FastAPI):
     tarefa.cancel()
 
 
-app = FastAPI(title="Central Odonto", lifespan=ciclo_de_vida)
+app = FastAPI(title="centralodonto", lifespan=ciclo_de_vida)
 app.mount("/static", StaticFiles(directory=str(Path(__file__).parent / "static")), name="static")
 app.add_middleware(SessionMiddleware, secret_key=config.CHAVE_SESSAO, max_age=12 * 3600, same_site="lax",
                    https_only=config.COOKIE_SEGURO)

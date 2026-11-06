@@ -9,7 +9,7 @@
   <h2>Próximos dias <span class="suave" style="font-weight:400;font-size:var(--t-sm)">{{ semanas }} semanas</span></h2>
   {% for v in vagas %}
     {% set ativos = v.ativos|sort(attribute='inicio') %}
-    {% set cor = cores.get(v.sessao.turma, '#1f4f47') %}
+    {% set cor = cores.get(v.sessao.turma, '#0e4d3a') %}
     <a class="cartao-dia {{ 'hoje' if v.inicio.date() == hoje }} {{ 'bloq' if v.bloqueada }}" href="/professor/vaga/{{ v.id }}" style="border-left-color:{{ 'var(--gengiva)' if v.inicio.date() == hoje else cor }}">
       <div class="topo">
         <span class="data">{{ DIAS_SEMANA[v.inicio.weekday()] }} {{ v.inicio.strftime('%d/%m') }}<small>{{ v.inicio.strftime('%H:%M') }}–{{ v.fim.strftime('%H:%M') }}</small></span>

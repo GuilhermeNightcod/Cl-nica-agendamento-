@@ -57,10 +57,14 @@ RegistroAcesso                         (LGPD: usuário, ação, paciente, quando
 
 ## Visual
 
-- Estilos em `app/static/estilo.css` (tokens no topo). Fonte Atkinson Hyperlegible Next servida localmente
-  (`app/static/fontes`, licença OFL), sem chamar o Google na hora do uso.
-- Paleta: verde campo cirúrgico `#1f4f47`, rosa gengiva `#c24d6b` (destaque), esmalte `#f5f8f7`, tinta `#1b2826`.
-- Turmas com cores de papel articular (carbono): azul `#3557c9`, verde `#2e8a6e`, ameixa `#8e3f82`.
+- Segue o guia de marca em `docs/marca/` (símbolo dos dois incisivos centrais, verde e rosa).
+- Estilos em `app/static/estilo.css` (tokens no topo). Fonte **Nunito** servida localmente (`app/static/fontes`, OFL):
+  Black (900) em títulos e em "central", Regular nos textos.
+- Paleta: Verde Incisivo `#22a06b`, Rosa Gengiva `#ff4f9a`, Verde Fundo `#0e4d3a` (textos, menu, botões),
+  Rosa Algodão `#ffe1ee`, Menta `#d6f5e3`, Branco Esmalte `#fff8fb` (fundo).
+- Acessibilidade: verde e rosa da marca não carregam texto pequeno (contraste ~3:1); para isso há
+  `--verde-texto #15704a` e `--rosa-texto #b8236e` (≥ 4,5:1). Botões usam Verde Fundo (9,8:1).
+- Logo: `templates/_logo.html` (SVG inline, variante clara para fundo escuro) e `static/simbolo.svg` (favicon).
 - Ocupação mostrada como fileira de boxes (`.boxes`): um quadrado por vaga; rosa = encaixe acima do limite.
 
 ## Decisões e por quê

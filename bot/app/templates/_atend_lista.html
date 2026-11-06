@@ -1,4 +1,4 @@
-{% set cores_av = ['#e8590c','#3b5bdb','#0ca678','#1098ad','#7048e8','#d6336c','#2f9e44','#f08c00'] %}
+{% set cores_av = ['#15704a','#b8236e','#0e4d3a','#3557c9','#8e3f82','#8a5a00','#1f6f8b','#a81e63'] %}
 {% for it in itens %}
   {% set p = it.p %}{% set at = it.at %}
   <a class="item {{ 'sel' if selecionado == p.id }} {{ 'urg' if at and at.urgente }}" href="/atendimentos?aba={{ aba }}&p={{ p.id }}&busca={{ busca|urlencode }}&setor={{ setor }}&etiqueta={{ etiqueta }}&agente={{ agente }}">

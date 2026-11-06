@@ -3,8 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#1f4f47">
-<title>{% block titulo %}{% endblock %} — Central Odonto</title>
+<meta name="theme-color" content="#0e4d3a">
+<link rel="icon" type="image/svg+xml" href="/static/simbolo.svg">
+<title>{% block titulo %}{% endblock %} | centralodonto</title>
 <link rel="preload" href="/static/fontes/atkinson-next-normal-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/static/estilo.css">
 {% block cabeca %}{% endblock %}
@@ -15,8 +16,8 @@
 {% if usuario.papel in ('aluno', 'professor') %}
 <aside class="lateral do-aluno">
   <a class="marca" href="/{{ usuario.papel }}">
-    <svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><path d="M9.5 4.5c-3.6 0-5.5 2.9-5.5 6.4 0 3 1.1 5.1 2 7.4.9 2.4 1 5.8 1.9 8.1.5 1.3 1.3 1.9 2.1 1.9 1.6 0 1.9-2.4 2.3-4.6.4-2 1-3.8 3.7-3.8s3.3 1.8 3.7 3.8c.4 2.2.7 4.6 2.3 4.6.8 0 1.6-.6 2.1-1.9.9-2.3 1-5.7 1.9-8.1.9-2.3 2-4.4 2-7.4 0-3.5-1.9-6.4-5.5-6.4-2.6 0-4 1.3-6.5 1.3S12.1 4.5 9.5 4.5z" fill="#fff"/><path d="M11 9.5c1.6.6 3.3.9 5 .9" stroke="#c24d6b" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
-    <span>Central Odonto<small>{{ usuario.turma if usuario.papel == 'aluno' else 'Professor' }}</small></span></a>
+    {% with logo_claro=true, logo_tamanho=26 %}{% include "_logo.html" %}{% endwith %}
+    <small>{{ usuario.turma if usuario.papel == 'aluno' else 'Professor' }}</small></a>
   {% if usuario.papel == 'professor' %}
   <a href="/professor" class="nav {{ 'ativo' if atual.startswith('/professor') }}"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>Minhas clínicas</span></a>
   {% else %}
@@ -32,8 +33,8 @@
 {% else %}
 <aside class="lateral">
   <a class="marca" href="/agenda">
-    <svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><path d="M9.5 4.5c-3.6 0-5.5 2.9-5.5 6.4 0 3 1.1 5.1 2 7.4.9 2.4 1 5.8 1.9 8.1.5 1.3 1.3 1.9 2.1 1.9 1.6 0 1.9-2.4 2.3-4.6.4-2 1-3.8 3.7-3.8s3.3 1.8 3.7 3.8c.4 2.2.7 4.6 2.3 4.6.8 0 1.6-.6 2.1-1.9.9-2.3 1-5.7 1.9-8.1.9-2.3 2-4.4 2-7.4 0-3.5-1.9-6.4-5.5-6.4-2.6 0-4 1.3-6.5 1.3S12.1 4.5 9.5 4.5z" fill="#fff"/><path d="M11 9.5c1.6.6 3.3.9 5 .9" stroke="#c24d6b" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
-    <span>Central Odonto<small>{{ config.NOME_CLINICA }}</small></span></a>
+    {% with logo_claro=true, logo_tamanho=26 %}{% include "_logo.html" %}{% endwith %}
+    <small>{{ config.NOME_CLINICA }}</small></a>
   <a href="/agenda" class="nav {{ 'ativo' if atual == '/agenda' or atual.startswith('/agenda/') }}"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>Agenda</span></a>
   <a href="/atendimentos" class="nav {{ 'ativo' if atual.startswith('/atendimentos') }}"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 4z"/><path d="M8 9h8M8 12h5"/></svg><span>Atendimentos</span>{% if fila_count %}<b class="selo">{{ fila_count }}</b>{% endif %}</a>
   <a href="/agendar" class="nav {{ 'ativo' if atual.startswith('/agendar') }}"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg><span>Agendar</span></a>

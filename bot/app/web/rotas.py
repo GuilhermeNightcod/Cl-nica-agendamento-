@@ -268,7 +268,7 @@ def procedimentos_por_area(s, sessao_clinica: SessaoClinica | None = None) -> li
 
 
 # ============================================================ agenda
-CORES_TURMA = ["#3557c9", "#2e8a6e", "#8e3f82", "#b5651d", "#4b6b2a", "#5b4fa8"]  # papel articular
+CORES_TURMA = ["#3557c9", "#15704a", "#8e3f82", "#8a5a00", "#1f6f8b", "#5b4fa8"]  # papel articular
 
 
 def _layout_dia(vagas: list[Vaga]) -> list[tuple[Vaga, int, int]]:

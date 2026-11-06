@@ -1,4 +1,6 @@
-# 🦷 Central Inteligente de Atendimento Odontológico
+# centralodonto
+
+**O sorriso no centro do cuidado.** Agenda da clínica-escola de odontologia (guia de marca em [`docs/marca/`](docs/marca/)).
 
 Sistema da **clínica-escola de Odontologia**: agenda por **turma, dia de clínica, professor e
 procedimento**, **central de atendimentos do WhatsApp** (bot + fila humana), cadastro de pacientes com

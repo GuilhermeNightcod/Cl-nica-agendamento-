@@ -1,7 +1,7 @@
   <div class="cartoes">
     {% for novo, senha in criados %}
     <div class="cartao-login">
-      <b>{{ novo.nome }}</b><small>{{ novo.turma or novo.papel_nome }}, Central Odonto</small>
+      <b>{{ novo.nome }}</b><small>{{ novo.turma or novo.papel_nome }}, centralodonto</small>
       <dl><dt>Site</dt><dd>{{ config.ENDERECO_SITE or request.base_url.hostname }}</dd><dt>Usuário</dt><dd>{{ novo.login }}</dd><dt>Senha</dt><dd>{{ senha }}</dd></dl>
     </div>
     {% endfor %}

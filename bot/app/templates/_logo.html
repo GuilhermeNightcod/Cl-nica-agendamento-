@@ -1,0 +1,9 @@
+{# Logo centralodonto. Variáveis: logo_claro (fundo escuro), logo_tamanho (altura do símbolo, px), logo_texto (mostra a palavra) #}
+{% set _alt = logo_tamanho or 28 %}
+<span class="logo {{ 'logo-claro' if logo_claro }}" role="img" aria-label="centralodonto">
+  <svg viewBox="0 0 100 110" height="{{ _alt }}" width="{{ (_alt * 100 / 110)|round|int }}" aria-hidden="true">
+    <path fill="{{ '#FFFFFF' if logo_claro else '#22A06B' }}" d="M8,0 H40.5 A5.5,5.5 0 0 1 46,5.5 V105.5 A4.5,4.5 0 0 1 41.5,110 H19 A19,19 0 0 1 0,91 V8 A8,8 0 0 1 8,0 Z"/>
+    <path fill="#FF4F9A" d="M59.5,0 H92 A8,8 0 0 1 100,8 V91 A19,19 0 0 1 81,110 H58.5 A4.5,4.5 0 0 1 54,105.5 V5.5 A5.5,5.5 0 0 1 59.5,0 Z"/>
+  </svg>
+  {% if logo_texto is not defined or logo_texto %}<span class="palavra"><b>central</b>odonto</span>{% endif %}
+</span>

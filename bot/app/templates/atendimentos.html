@@ -7,7 +7,7 @@
   .abas { display:flex; border-bottom:1px solid var(--borda); }
   .abas a { flex:1; text-align:center; padding:11px 2px; font-size:12px; white-space:nowrap; color:var(--suave); text-decoration:none; border-bottom:2px solid transparent; position:relative; }
   .abas a.ativa { color:var(--azul); border-color:var(--azul); font-weight:600; }
-  .abas a .n { display:inline-block; background:#22c55e; color:#fff; border-radius:99px; font-size:10.5px; padding:0 6px; margin-left:3px; }
+  .abas a .n { display:inline-block; background:var(--rosa-texto); color:#fff; font-weight:800; border-radius:99px; font-size:10.5px; padding:0 6px; margin-left:3px; }
   .busca { display:flex; gap:6px; padding:10px; border-bottom:1px solid var(--borda); position:relative; }
   .busca input { font-size:13.5px; }
   .filtro-btn { position:relative; border:1px solid var(--borda); background:#fff; border-radius:6px; padding:0 10px; cursor:pointer; }
@@ -26,8 +26,8 @@
   .l1 b { flex:1; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:600; }
   .l1 small { color:var(--suave); font-size:11px; }
   .prev { flex:1; font-size:12.5px; color:var(--suave); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .naolidas { background:#22c55e; color:#fff; border-radius:99px; font-size:11px; padding:0 6px; }
-  .ag { width:18px; height:18px; border-radius:50%; background:#13294b; color:#fff; font-size:10px; display:flex; align-items:center; justify-content:center; }
+  .naolidas { background:var(--rosa-texto); color:#fff; font-weight:800; border-radius:99px; font-size:11px; padding:0 6px; }
+  .ag { width:18px; height:18px; border-radius:50%; background:var(--verde-fundo); color:#fff; font-size:10px; display:flex; align-items:center; justify-content:center; }
   .pt { width:10px; height:10px; border-radius:50%; }
   .tags { display:flex; gap:4px; } .tags i { width:22px; height:4px; border-radius:2px; display:block; }
   .vazio-lista { text-align:center; color:var(--suave); padding:50px 20px; font-size:14px; }
@@ -45,13 +45,13 @@
   .msg .hora { font-size:10.5px; color:var(--suave); text-align:right; }
   .msg .autor { font-size:11px; font-weight:600; margin-bottom:2px; }
   .msg.m-ent { background:#fff; align-self:flex-start; border-top-left-radius:2px; }
-  .msg.m-bot { background:#e8eef9; align-self:flex-end; border-top-right-radius:2px; } .msg.m-bot .autor { color:#3b5bdb; }
-  .msg.m-ag { background:#dcf8c6; align-self:flex-end; border-top-right-radius:2px; } .msg.m-ag .autor { color:#2b8a3e; }
-  .dia-sep { text-align:center; margin:8px 0; } .dia-sep span { background:#e2e8ef; font-size:11.5px; padding:3px 10px; border-radius:8px; color:var(--suave); }
+  .msg.m-bot { background:var(--rosa-algodao); align-self:flex-end; border-top-right-radius:2px; } .msg.m-bot .autor { color:var(--rosa-texto); }
+  .msg.m-ag { background:var(--menta); align-self:flex-end; border-top-right-radius:2px; } .msg.m-ag .autor { color:var(--verde-texto); }
+  .dia-sep { text-align:center; margin:8px 0; } .dia-sep span { background:var(--rosa-algodao); font-size:11.5px; padding:3px 10px; border-radius:8px; color:var(--suave); }
   .envio { background:#fff; border-top:1px solid var(--borda); padding:10px 16px; display:flex; gap:8px; align-items:flex-end; }
   .envio textarea { min-height:44px; max-height:160px; resize:vertical; }
   .faixa { padding:10px 16px; font-size:13.5px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-  .faixa.fila { background:#fff3dc; color:var(--amarelo); } .faixa.fechada { background:#fde8e6; color:var(--vermelho); } .faixa.bot { background:#e8eef9; color:#3b5bdb; }
+  .faixa.fila { background:#fff3dc; color:var(--amarelo); } .faixa.fechada { background:#fde8e6; color:var(--vermelho); } .faixa.bot { background:var(--rosa-algodao); color:var(--rosa-texto); }
   .lateral-info { font-size:12.5px; color:var(--suave); }
   .aviso { margin:10px 16px 0; }
 </style>{% endblock %}
@@ -88,7 +88,7 @@
       <div class="vazio-chat"><div style="font-size:64px">💬</div>Selecione um atendimento</div>
     {% else %}
       <div class="cab-chat">
-        <span class="av" style="background:#3b5bdb">{{ cp.nome_exibicao[:1]|upper }}</span>
+        <span class="av" style="background:var(--verde-fundo)">{{ cp.nome_exibicao[:1]|upper }}</span>
         <div>
           <div class="nome">{{ cp.nome_exibicao }}</div>
           <div class="det">{{ cp.telefone|fone }}{% if cp.idade() is not none %} · {{ cp.idade() }} anos{% endif %}{% if cp.numero_prontuario %} · pront. {{ cp.numero_prontuario }}{% endif %}
