@@ -47,7 +47,7 @@ def test_professor_ve_suas_clinicas_e_marca_presenca(c):
     entrar(c, "coord", "senha")
     assert "Jhenifer Pinheiro" in c.get("/usuarios/novo").text  # nome vem da grade
     assert "Escolha o nome do professor" in c.post("/usuarios/novo", data={"nome": "X", "login": "prof.x", "papel": "professor"}).text
-    criar_professor(c, "Jhenifer Pinheiro", "Jhenifer Pinheiro", "jhenifer")
+    criar_professor(c, "Jhenifer Pinheiro", "Jhenifer Pinheiro", "prof.jhenifer")
 
     assert c.get("/", follow_redirects=False).headers["location"] == "/professor"
     r = c.get("/professor")

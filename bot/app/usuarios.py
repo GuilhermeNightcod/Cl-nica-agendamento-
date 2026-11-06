@@ -107,10 +107,26 @@ def autenticar(s: Session, login: str, senha: str) -> Usuario:
 
 
 def criar_iniciais(s: Session) -> int:
-    """Primeira execução: cria os usuários do .env (USUARIOS), já pedindo troca de senha."""
-    if s.scalar(select(func.count(Usuario.id))):
-        return 0
+    """
+    Primeira execução: cria os usuários do .env (USUARIOS).
+    Sempre: cria quem está em dados/usuarios_iniciais.csv e ainda não existe, com senha provisória
+    aleatória (a coordenação imprime os cartões em Usuários > Cartões de primeiro acesso).
+    """
+    from .dados import _ler
+
     n = 0
+    for l in _ler("usuarios_iniciais.csv"):
+        login = (l.get("login") or "").strip().lower()
+        if not login or s.scalar(select(Usuario.id).where(Usuario.login == login)):
+            continue
+        try:
+            criar(s, login, l["nome"], l.get("papel") or "recepcao", criado_por="lista inicial",
+                  turma=l.get("turma") or None, nome_grade=l.get("nome_grade") or None)
+            n += 1
+        except ErroUsuario:
+            continue
+    if s.scalar(select(func.count(Usuario.id))) > n:
+        return n
     for login, (senha, papel) in config.usuarios().items():
         try:
             criar(s, login, login.capitalize(), papel if papel in PAPEIS else "recepcao", senha=senha, criado_por="instalação",

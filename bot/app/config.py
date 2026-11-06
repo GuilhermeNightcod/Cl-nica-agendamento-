@@ -15,6 +15,11 @@ SEMESTRE_INICIO = date.fromisoformat(_env("SEMESTRE_INICIO", "2026-08-03"))
 SEMESTRE_FIM = date.fromisoformat(_env("SEMESTRE_FIM", "2026-12-11"))
 DIAS_ANTECEDENCIA_MIN = int(_env("DIAS_ANTECEDENCIA_MIN", "1"))
 MAX_HORARIOS_OFERECIDOS = int(_env("MAX_HORARIOS_OFERECIDOS", "5"))
+# Como o bot trata quem quer agendar:
+#   triagem -> coleta dados, motivo e turno e manda para a fila "Triagem" da recepção (a ASB agenda)
+#   direto  -> o próprio paciente escolhe área e horário pelo WhatsApp
+MODO_AGENDAMENTO_BOT = _env("MODO_AGENDAMENTO_BOT", "triagem").lower()
+SETOR_TRIAGEM = _env("SETOR_TRIAGEM", "Triagem (ASB)")
 
 # --- Banco de dados --------------------------------------------------------
 DATABASE_URL = _env("DATABASE_URL", "sqlite:///./odonto.db")

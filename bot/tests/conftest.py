@@ -15,6 +15,7 @@ os.environ.update(
     CHATWOOT_WEBHOOK_TOKEN="cw123",
     USUARIOS="coord:senha:coordenacao,recep:senha2:recepcao",
     TROCAR_SENHA_INICIAL="nao",
+    MODO_AGENDAMENTO_BOT="direto",  # testes do fluxo completo; o modo triagem tem teste próprio
     ARQUIVOS_DIR=str(Path(tempfile.mkdtemp()) / "arquivos"),
 )
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))

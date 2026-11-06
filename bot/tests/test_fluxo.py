@@ -178,3 +178,32 @@ def test_urgencia_com_palavras_no_meio():
     assert contem_expressao(normalizar("uma dor muito forte"), "dor forte")
     assert not contem_expressao(normalizar("gengiva sangra ao escovar"), "sangrando muito")
     assert not contem_expressao(normalizar("o rosto dele no outro dia ficou inchado"), "rosto inchado")
+
+
+def test_modo_triagem_vai_para_fila_da_asb(bot, monkeypatch):
+    from app.models import Atendimento
+    monkeypatch.setattr(config, "MODO_AGENDAMENTO_BOT", "triagem")
+    bot.diz("oi")
+    bot.diz(opcao="lgpd:sim")
+    bot.diz(opcao="menu:agendar")
+    bot.diz("Renata Alves")
+    bot.diz("10/10/1985")
+    r = bot.diz("quero fazer uma limpeza e ver um dente quebrado")
+    turnos = [o[0] for o in r[0].opcoes]
+    assert "turno:noite" in turnos and "turno:tarde" not in turnos  # a clínica não atende à tarde
+    r = bot.diz(opcao="turno:noite")
+    assert "Nossa equipe vai avaliar" in r[0].texto
+    with sessao() as s:
+        at = s.scalar(select(Atendimento))
+        assert at.status == "fila" and at.setor.nome == "Triagem (ASB)"
+        assert "limpeza" in at.motivo and " anos" in at.motivo and "noite" in at.motivo
+        assert s.scalar(select(Agendamento)) is None  # quem agenda é a ASB
+    assert bot.diz("ok, aguardo") == []  # depois disso quem responde é a recepção
+
+
+def test_valores_e_endereco(bot):
+    bot.diz("oi")
+    bot.diz(opcao="lgpd:sim")
+    r = bot.diz(opcao="menu:valores")
+    textos = " ".join(getattr(x, "texto", "") for x in r)
+    assert "R$ 50,00" in textos and "Valparaíso de Goiás" in textos and "18h às 21h30" in textos

@@ -31,12 +31,14 @@ def aberto_do_paciente(s: Session, paciente_id: int) -> Atendimento | None:
     )
 
 
-def abrir(s: Session, p: Paciente, motivo: str, urgente: bool = False, atendente: str | None = None) -> Atendimento:
+def abrir(s: Session, p: Paciente, motivo: str, urgente: bool = False, atendente: str | None = None,
+          setor_nome: str | None = None) -> Atendimento:
     """Coloca o paciente na fila (ou já com um atendente, se `atendente` for informado)."""
     at = aberto_do_paciente(s, p.id)
     agora = config.agora()
     if at is None:
-        setor = setor_padrao(s, urgente)
+        setor = (s.scalar(select(Setor).where(Setor.nome == setor_nome, Setor.ativo)) if setor_nome and not urgente else None) \
+            or setor_padrao(s, urgente)
         at = Atendimento(paciente_id=p.id, setor_id=setor.id if setor else None, motivo=motivo[:200], urgente=urgente,
                          status="fila", nao_lidas=0, aberto_em=agora, ultima_msg_em=agora)
         s.add(at)

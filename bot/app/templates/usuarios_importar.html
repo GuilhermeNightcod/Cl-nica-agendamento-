@@ -29,14 +29,7 @@
     <button class="btn" type="button" onclick="window.print()">Imprimir cartões</button>
   </div>
   {% if pulados %}<div class="aviso alerta nao-imprimir">Já tinham login e foram ignorados: {{ pulados|join(', ') }}.</div>{% endif %}
-  <div class="cartoes">
-    {% for novo, senha in criados %}
-    <div class="cartao-login">
-      <b>{{ novo.nome }}</b><small>{{ novo.turma }}, Central Odonto</small>
-      <dl><dt>Site</dt><dd>{{ config.ENDERECO_SITE or request.base_url.hostname }}</dd><dt>Usuário</dt><dd>{{ novo.login }}</dd><dt>Senha</dt><dd>{{ senha }}</dd></dl>
-    </div>
-    {% endfor %}
-  </div>
+  {% include "_cartoes_login.html" %}
 </div>
 {% endif %}
 {% endblock %}

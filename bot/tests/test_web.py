@@ -36,7 +36,8 @@ def test_sessoes_do_8_semestre_importadas(cliente):
     with sessao() as s:
         terca = s.scalar(select(SessaoClinica).where(SessaoClinica.turma == "8º semestre", SessaoClinica.dia_semana == 1))
         assert terca.professor == "Jhenifer Pinheiro"
-        assert terca.hora_inicio.hour == 19  # turma noturna
+        assert (terca.hora_inicio.strftime("%H:%M"), terca.hora_fim.strftime("%H:%M")) == ("18:00", "21:30")  # noturno
+        assert terca.alunos == 13 and terca.duplas == 7 and terca.vagas == 7  # 8º: 13 alunos, 1 paciente por dupla
         assert {e.codigo for e in terca.especialidades} == {"triagem", "endodontia"}
         hebiatria = s.scalar(select(SessaoClinica).where(SessaoClinica.turma == "8º semestre", SessaoClinica.dia_semana == 2))
         assert (hebiatria.idade_min, hebiatria.idade_max) == (10, 19)

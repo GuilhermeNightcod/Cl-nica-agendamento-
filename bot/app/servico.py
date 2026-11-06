@@ -42,7 +42,7 @@ class Servico:
         if res.chamar_humano:
             from . import atendimentos
 
-            at = atendimentos.abrir(s, p, res.chamar_humano, urgente=res.urgente)
+            at = atendimentos.abrir(s, p, res.chamar_humano, urgente=res.urgente, setor_nome=res.setor)
             # liga ao atendimento as mensagens desta troca (a do paciente e a resposta do bot)
             for m in s.scalars(select(Mensagem).where(Mensagem.paciente_id == p.id, Mensagem.atendimento_id.is_(None))
                                .order_by(Mensagem.id.desc()).limit(1 + len(res.respostas))):

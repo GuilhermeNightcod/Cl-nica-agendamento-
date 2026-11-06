@@ -86,7 +86,28 @@ def test_bloqueio_apos_tentativas_e_redefinicao(c):
 def test_sempre_sobra_um_coordenador(c):
     entrar(c, "coord", "senha")
     with sessao() as s:
+        for outro in s.scalars(select(Usuario).where(Usuario.papel == "coordenacao", Usuario.login != "coord")):
+            outro.ativo = False
         uid = s.scalar(select(Usuario.id).where(Usuario.login == "coord"))
     r = c.post(f"/usuarios/{uid}", data={"nome": "Coord", "papel": "recepcao", "ativo": "1"})
     assert "pelo menos um usuário ativo da coordenação" in r.text
     assert c.get("/usuarios").status_code == 200 and c.get("/usuarios/novo").status_code == 200
+
+
+def test_lista_inicial_e_cartoes_de_primeiro_acesso(c):
+    with sessao() as s:
+        por_login = {u.login: u for u in s.scalars(select(Usuario))}
+        assert por_login["jhenifer"].papel == "professor" and por_login["jhenifer"].nome_grade == "Jhenifer Pinheiro"
+        assert por_login["jhenifer.coord"].papel == "coordenacao" and por_login["keylla.melo"].papel == "coordenacao"
+        assert por_login["rosemar"].trocar_senha
+        ids = [por_login[l].id for l in ("jhenifer", "keylla.melo")]
+    entrar(c, "coord", "senha")
+    r = c.get("/usuarios/primeiro-acesso")
+    assert "Keylla Melo" in r.text and "Thaynara Lima" in r.text
+    r = c.post("/usuarios/primeiro-acesso", data={"ids": [str(i) for i in ids]})
+    cartoes = dict(re.findall(r"<dt>Usuário</dt><dd>([^<]+)</dd><dt>Senha</dt><dd>([^<]+)</dd>", r.text))
+    assert set(cartoes) == {"jhenifer", "keylla.melo"}
+    c.cookies.clear()
+    r = entrar(c, "jhenifer", cartoes["jhenifer"])
+    assert r.status_code == 303 and "erro" not in r.headers["location"]
+    assert c.get("/agenda", follow_redirects=False).headers["location"] == "/minha-senha"

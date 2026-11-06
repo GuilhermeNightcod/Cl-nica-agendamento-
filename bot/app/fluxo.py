@@ -34,6 +34,7 @@ class Resultado:
     respostas: list[Resposta] = field(default_factory=list)
     chamar_humano: str | None = None  # motivo, quando o bot passou para um humano agora
     urgente: bool = False
+    setor: str | None = None  # setor de destino (ex.: Triagem), quando não é o padrão
     repassar_para_humano: bool = False  # paciente já está com humano: só repassar a mensagem
     duplicada: bool = False
 
@@ -97,6 +98,7 @@ def menu() -> Lista:
             ("menu:agendar", T.MENU_AGENDAR, "Marque sua consulta"),
             ("menu:info", T.MENU_INFO, "Conheça os atendimentos"),
             ("menu:meus", T.MENU_MEUS, "Ver ou cancelar consultas"),
+            ("menu:valores", T.MENU_VALORES, "Taxas, endereço e horários"),
             ("menu:humano", T.MENU_HUMANO, "Fale com a recepção"),
         ],
     )
@@ -266,7 +268,8 @@ def _decidir(s: Session, e: Entrada, p: Paciente, conv: Conversa) -> Resultado:
         conv.estado = "inicio"
 
     handler = ESTADOS.get(conv.estado, _estado_inicio)
-    return Resultado(handler(s, e, p, conv, escolha))
+    r = handler(s, e, p, conv, escolha)
+    return r if isinstance(r, Resultado) else Resultado(r)
 
 
 # --------------------------------------------------------------------------- estados
@@ -292,6 +295,8 @@ def _estado_privacidade(s, e, p, conv, escolha):
 def _estado_menu(s, e, p, conv, escolha):
     if escolha == "menu:agendar":
         return _iniciar_agendamento(p, conv)
+    if escolha == "menu:valores":
+        return _ir_menu(conv, [Texto(T.VALORES), Texto(T.ENDERECO)])
     if escolha == "menu:info":
         esps = especialidades_atendidas(s, so_bot=True)
         lista = "\n".join(f"🦷 *{x.nome}* — {x.descricao}" for x in esps)
@@ -353,8 +358,36 @@ def _estado_queixa(s, e, p, conv, escolha):
     if len(e.texto.strip()) < 2:
         return [Texto(T.PERGUNTA_QUEIXA)]
     _ctx(conv, queixa=e.texto.strip()[:500])
+    if config.MODO_AGENDAMENTO_BOT == "triagem":
+        conv.estado = "turno_triagem"
+        return [tela_turno_triagem(s)]
     conv.estado = "especialidade"
     return [tela_especialidades(s, p)]
+
+
+def tela_turno_triagem(s: Session) -> Lista:
+    """Só os turnos que a clínica realmente tem (manhã/noite), mais 'qualquer'."""
+    from .models import SessaoClinica
+
+    turnos = set()
+    for se in s.scalars(select(SessaoClinica).where(SessaoClinica.ativa)):
+        h = se.hora_inicio.hour
+        turnos.add("manha" if h < 12 else ("tarde" if h < 18 else "noite"))
+    nomes = {"manha": (T.TURNO_MANHA, "Turmas da manhã"), "tarde": (T.TURNO_TARDE, "Turmas da tarde"), "noite": (T.TURNO_NOITE, "Turmas da noite")}
+    ops = [(f"turno:{t}", *nomes[t]) for t in ("manha", "tarde", "noite") if t in turnos]
+    return Lista(T.PERGUNTA_TURNO_TRIAGEM, T.MENU_BOTAO, ops + [("turno:qualquer", T.TURNO_QUALQUER, "O que tiver primeiro")])
+
+
+def _estado_turno_triagem(s, e, p, conv, escolha):
+    if not (escolha and escolha.startswith("turno:")):
+        return [Texto(T.NAO_ENTENDI), tela_turno_triagem(s)]
+    turno = {"manha": "manhã", "tarde": "tarde", "noite": "noite"}.get(escolha.split(":")[1], "qualquer")
+    ctx = conv.contexto or {}
+    idade = p.idade()
+    motivo = f"Triagem: {ctx.get('queixa') or '-'} | {idade if idade is not None else '?'} anos | turno: {turno}"
+    res = _passar_para_humano(conv, motivo[:200], T.TRIAGEM_OK.format(nome=primeiro_nome(p) or "paciente"))
+    res.setor = config.SETOR_TRIAGEM
+    return res
 
 
 def _estado_especialidade(s, e, p, conv, escolha):
@@ -451,6 +484,8 @@ def _estado_recuperacao(s, e, p, conv, escolha):
         return [tela_especialidades(s, p)]
     if anterior == "turno":
         return [tela_turno()]
+    if anterior == "turno_triagem":
+        return [tela_turno_triagem(s)]
     if anterior in ("horario", "confirmar", "sem_vaga"):
         return [tela_horarios(s, conv)]
     return _estado_inicio(s, e, p, conv, escolha)
@@ -468,10 +503,11 @@ ESTADOS = {
     "queixa": _estado_queixa,
     "especialidade": _estado_especialidade,
     "turno": _estado_turno,
+    "turno_triagem": _estado_turno_triagem,
     "sem_vaga": _estado_sem_vaga,
     "horario": _estado_horario,
     "confirmar": _estado_confirmar,
 }
 
 # estados "no meio do agendamento" (usados pela recuperação de pacientes)
-ESTADOS_AGENDAMENTO = {"nome", "nascimento", "queixa", "especialidade", "turno", "horario", "confirmar", "sem_vaga"}
+ESTADOS_AGENDAMENTO = {"nome", "nascimento", "queixa", "especialidade", "turno", "turno_triagem", "horario", "confirmar", "sem_vaga"}

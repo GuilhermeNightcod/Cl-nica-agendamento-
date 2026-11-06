@@ -1,0 +1,38 @@
+{% extends "base.html" %}{% block titulo %}Cartões de primeiro acesso{% endblock %}
+{% block cabeca %}<style>
+  @media print { .lateral, .nao-imprimir { display:none !important; } main.com-lateral { margin:0; } .caixa { border:0; padding:0; } }
+  .cartoes { display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:10px; }
+  .cartao-login { border:1px dashed #9fb5ae; border-radius:10px; padding:12px; break-inside:avoid; }
+  .cartao-login b { display:block; font-size:var(--t-md); }
+  .cartao-login dl { margin:6px 0 0; display:grid; grid-template-columns:auto 1fr; gap:2px 10px; font-size:var(--t-sm); }
+  .cartao-login dt { color:var(--suave); } .cartao-login dd { margin:0; font-weight:700; letter-spacing:.02em; }
+</style>{% endblock %}
+{% block conteudo %}
+<a class="voltar nao-imprimir" href="/usuarios">‹ Usuários</a>
+{% if criados is none %}
+<div class="caixa" style="max-width:820px">
+  <h1>Cartões de primeiro acesso</h1>
+  <p class="sub">Pessoas que ainda não entraram no sistema. Marque quem vai receber o cartão: o sistema gera uma senha provisória nova para cada um e mostra os cartões para imprimir.</p>
+  {% if pendentes %}
+  <form method="post" action="/usuarios/primeiro-acesso">
+    <div class="tabela" style="margin-bottom:14px"><table>
+      <tr><th><input type="checkbox" checked onclick="document.querySelectorAll('input[name=ids]').forEach(c => c.checked = this.checked)" aria-label="Marcar todos" style="width:auto"></th><th>Nome</th><th>Usuário</th><th>Papel</th></tr>
+      {% for p in pendentes %}{% if p.login != usuario.login %}
+      <tr><td><input type="checkbox" name="ids" value="{{ p.id }}" checked style="width:auto"></td><td>{{ p.nome }}</td><td>{{ p.login }}</td><td>{{ p.papel_nome }}{% if p.turma %}, {{ p.turma }}{% endif %}</td></tr>
+      {% endif %}{% endfor %}
+    </table></div>
+    <button class="btn">Gerar cartões</button>
+  </form>
+  {% else %}<p class="vazio">Todos já entraram no sistema pelo menos uma vez.</p>{% endif %}
+</div>
+{% else %}
+<div class="caixa">
+  <div class="linha entre nao-imprimir" style="margin-bottom:10px">
+    <div><h1>{{ criados|length }} cartão(ões) gerado(s)</h1>
+      <p class="sub" style="margin:0">Imprima e entregue. As senhas aparecem só agora; senhas provisórias anteriores dessas pessoas deixaram de valer.</p></div>
+    <button class="btn" type="button" onclick="window.print()">Imprimir cartões</button>
+  </div>
+  {% include "_cartoes_login.html" %}
+</div>
+{% endif %}
+{% endblock %}

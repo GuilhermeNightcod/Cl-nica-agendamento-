@@ -151,3 +151,29 @@ def importar(request: Request, turma: str = Form(""), nomes: str = Form(""), u=D
             criados.append((novo, senha))
         _registrar(s, u["login"], "cadastrou alunos", f"{len(criados)} em {turma}")
         return render(request, "usuarios_importar.html", turmas=lista_turmas, criados=criados, pulados=pulados, turma=turma)
+
+
+# ------------------------------------------------------------------ cartões de primeiro acesso
+def _aguardando(s) -> list[Usuario]:
+    return list(s.scalars(select(Usuario).where(Usuario.ativo, Usuario.trocar_senha, Usuario.ultimo_acesso_em.is_(None))
+                          .order_by(Usuario.papel, Usuario.nome)))
+
+
+@router.get("/usuarios/primeiro-acesso", response_class=HTMLResponse)
+def tela_primeiro_acesso(request: Request, u=Depends(coordenacao)):
+    with sessao() as s:
+        return render(request, "usuarios_primeiro_acesso.html", pendentes=_aguardando(s), criados=None)
+
+
+@router.post("/usuarios/primeiro-acesso", response_class=HTMLResponse)
+async def gerar_cartoes(request: Request, u=Depends(coordenacao)):
+    ids = {int(x) for x in (await request.form()).getlist("ids") if str(x).isdigit()}
+    with sessao() as s:
+        criados = []
+        for alvo in _aguardando(s):
+            if alvo.id in ids and alvo.login != u["login"]:
+                senha = U.senha_provisoria()
+                alvo.senha_hash, alvo.tentativas_falhas, alvo.bloqueado_ate = U.gerar_hash(senha), 0, None
+                criados.append((alvo, senha))
+        _registrar(s, u["login"], "gerou cartões de primeiro acesso", f"{len(criados)} usuário(s)")
+        return render(request, "usuarios_primeiro_acesso.html", pendentes=[], criados=criados)

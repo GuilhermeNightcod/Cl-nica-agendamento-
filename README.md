@@ -91,7 +91,9 @@ Aceita JPG, PNG e PDF.
 | Função | Como funciona |
 |---|---|
 | Resposta imediata + aviso LGPD | Boas-vindas e menu; o paciente concorda antes de informar dados |
-| Agendamento | Nome → nascimento → motivo → área → turno → horário (só clínicas da idade do paciente) |
+| Pré-triagem | Nome → nascimento → motivo → turno preferido. O paciente vai para a fila **Triagem (ASB)** e a ASB agenda com os alunos (modo padrão `MODO_AGENDAMENTO_BOT=triagem`) |
+| Agendamento direto (opcional) | Com `MODO_AGENDAMENTO_BOT=direto`, o próprio paciente escolhe área e horário (só clínicas da idade dele) |
+| Valores e endereço | Tabela de taxa social, endereço e horários (edite em `bot/app/textos.py`) |
 | Urgência | "rosto inchado", "dor muito forte", "não para de sangrar"... chamam um humano |
 | Atendimento humano | A conversa vai para a **fila** da tela Atendimentos |
 | Lembrete | 24h antes, com botões **Confirmo** / **Remarcar** |
@@ -112,13 +114,16 @@ Aceita JPG, PNG e PDF.
 | **Mensagens do bot e palavras de urgência** | `bot/app/textos.py`, depois `docker compose restart bot` |
 | **Datas do semestre, usuários e senhas** | arquivo `.env` |
 
+Os logins iniciais (professores e coordenação) vêm de `bot/dados/usuarios_iniciais.csv` e são criados com senha
+provisória. A coordenação imprime os cartões em **Usuários → Cartões de primeiro acesso**.
+
 A grade inicial das turmas vem de `bot/dados/sessoes_clinica.csv` e só é importada **na primeira vez**.
 Depois disso, use a tela **Clínicas**.
 
 > ✅ A grade vem da **Grade 2026.2 Odonto Noturno** (6º, 8º e 10º semestre, só as disciplinas em
 > CLÍNICA/ODONTOCASE; pré-clínica, teoria e estágios em campo externo não recebem pacientes).
-> ⚠️ Confira: o **horário 19:00–22:00** e as **áreas** de cada disciplina foram estimados. Informe o **nº de alunos**
-> de cada turma e o **nº de boxes** do Odontocase; até lá as vagas ficam em 10 por clínica.
+> ✅ Levantamento: noturno das **18:00 às 21:30**, 6º com 23 alunos, 8º com 13, 10º com 12, **1 paciente por dupla**
+> (encaixe pela recepção). ⚠️ Falta: **nº de boxes** do Odontocase e a **grade do diurno** (08:30 às 12:00).
 
 > 💡 Ao salvar um CSV no Excel, escolha **"CSV UTF-8"** para os acentos não quebrarem.
 

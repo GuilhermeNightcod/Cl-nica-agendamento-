@@ -33,6 +33,7 @@ MENU_AGENDAR = "Agendar avaliação"
 MENU_INFO = "Especialidades"
 MENU_MEUS = "Meus agendamentos"
 MENU_HUMANO = "Falar com atendente"
+MENU_VALORES = "Valores e endereço"
 
 PERGUNTA_NOME = "Para começar, qual é o seu *nome completo*?"
 NOME_INVALIDO = "Não entendi 🤔. Pode me dizer seu nome completo?"
@@ -91,6 +92,37 @@ INFO_ESPECIALIDADES = "Estas são as especialidades atendidas na clínica-escola
 INFO_GERAL = (
     "ℹ️ Os atendimentos são realizados por alunos sob supervisão de professores. "
     "As consultas acontecem durante o semestre letivo."
+)
+
+# ---- Modo triagem (a recepção/ASB agenda depois de avaliar) ----
+PERGUNTA_TURNO_TRIAGEM = "Qual turno fica melhor para você vir à clínica?"
+TRIAGEM_OK = (
+    "Obrigado, {nome}! 🙏 Recebemos seus dados e o motivo da consulta.\n\n"
+    "Nossa equipe vai avaliar e te chamar *aqui pelo WhatsApp* para combinar o dia e o horário "
+    "com a turma que atende o seu caso."
+)
+
+# ---- Valores, endereço e horários (edite quando mudar) ----
+VALORES = (
+    "💲 *Tabela de valores (taxa social)*\n\n"
+    "• Avaliação + limpeza: R$ 30,00 (toda avaliação já inclui a limpeza)\n"
+    "• Restauração: R$ 30,00\n"
+    "• Tratamento de canal: R$ 30,00\n"
+    "• Atendimento infantil: R$ 30,00\n"
+    "• Prótese dentária: R$ 30,00 (custos de laboratório cobrados à parte, conforme o serviço)\n"
+    "• Extração / cirurgia: R$ 50,00\n"
+    "• Raio-X: R$ 5,00 por dente\n\n"
+    "Atendemos crianças, adolescentes, adultos e pessoas com necessidades especiais. "
+    "Os procedimentos são feitos por alunos com supervisão de professores."
+)
+ENDERECO = (
+    "📍 *Endereço*\n"
+    "Quadra 05, Lotes 1, 2 e 3, Sala 01, Parque Rio Branco\n"
+    "Q. Dois, L. 01, Loja 07, Parque Rio Branco\n"
+    "Valparaíso de Goiás - GO, CEP 72870-105\n\n"
+    "🕐 *Horários de atendimento*\n"
+    "Noite: 18h às 21h30\n"
+    "Manhã: 8h30 às 12h"
 )
 
 HUMANO_ENCAMINHADO = (
