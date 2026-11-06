@@ -123,7 +123,7 @@ Depois disso, use a tela **Clínicas**.
 > ✅ A grade vem da **Grade 2026.2 Odonto Noturno** (6º, 8º e 10º semestre, só as disciplinas em
 > CLÍNICA/ODONTOCASE; pré-clínica, teoria e estágios em campo externo não recebem pacientes).
 > ✅ Levantamento: noturno das **18:00 às 21:30**, 6º com 23 alunos, 8º com 13, 10º com 12, **1 paciente por dupla**
-> (encaixe pela recepção). ⚠️ Falta: **nº de boxes** do Odontocase e a **grade do diurno** (08:30 às 12:00).
+> (encaixe pela recepção), Odontocase com **15 boxes**. ⚠️ Falta: a **grade do diurno** (08:30 às 12:00).
 
 > 💡 Ao salvar um CSV no Excel, escolha **"CSV UTF-8"** para os acentos não quebrarem.
 
