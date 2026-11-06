@@ -143,6 +143,9 @@ Depois disso, use a tela **Clínicas**.
 
 ## Passo a passo para colocar no ar
 
+> **No VPS da Hostinger:** siga [`docs/INSTALACAO_HOSTINGER.md`](docs/INSTALACAO_HOSTINGER.md)
+> (domínio, HTTPS automático, instalação com um comando e backup diário).
+
 ### Passo 0: o que você precisa
 - Um computador ou servidor com **Docker** instalado ([docker.com](https://www.docker.com/products/docker-desktop/)).
 - Uma conta no **Meta for Developers** ([developers.facebook.com](https://developers.facebook.com)).

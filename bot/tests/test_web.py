@@ -214,3 +214,18 @@ def test_trio_na_cirurgia_do_6(cliente):
     with sessao() as s:
         logins = {u.login: u.papel for u in s.scalars(select(__import__("app.models", fromlist=["Usuario"]).Usuario))}
     assert logins.get("larissa") == "recepcao" and logins.get("herika") == "recepcao"
+
+
+def test_cabecalhos_de_seguranca(cliente):
+    r = cliente.get("/entrar")
+    assert r.headers["X-Frame-Options"] == "DENY" and r.headers["X-Content-Type-Options"] == "nosniff"
+
+
+def test_redefinir_senha_pelo_terminal(cliente):
+    import subprocess, sys, os
+    r = subprocess.run([sys.executable, "redefinir_senha.py", "recep"], capture_output=True, text=True, env=os.environ,
+                       cwd=os.path.dirname(os.path.dirname(__file__)))
+    assert r.returncode == 0, r.stderr
+    senha = r.stdout.split(": ")[1].split()[0]
+    cliente.cookies.clear()
+    assert "erro" not in cliente.post("/entrar", data={"login": "recep", "senha": senha}, follow_redirects=False).headers["location"]

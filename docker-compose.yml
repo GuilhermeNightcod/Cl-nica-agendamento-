@@ -4,6 +4,9 @@
 #  bot        -> sistema da clínica (agenda, atendimentos WhatsApp, pacientes, odontograma)  http://localhost:8000
 #  postgres   -> banco de dados
 #
+#  No servidor (com domínio e HTTPS automático):  docker compose --profile producao up -d
+#    caddy    -> recebe o tráfego em https://SEU_DOMINIO e repassa para o bot
+#
 #  Opcional: Chatwoot (outra caixa de atendimento). O sistema já tem a sua própria.
 #  Para ligar:  docker compose --profile chatwoot up -d
 
@@ -58,10 +61,27 @@ services:
       - ./bot/dados:/app/dados          # planilhas iniciais (especialidades, procedimentos, clínicas, feriados)
       - prontuarios:/app/arquivos       # prontuários digitalizados — FAÇA BACKUP!
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"         # só a própria máquina; de fora, o acesso é pelo caddy (HTTPS)
     depends_on:
       postgres:
         condition: service_healthy
+
+  # HTTPS automático (certificado Let's Encrypt gerado e renovado sozinho)
+  caddy:
+    image: caddy:2-alpine
+    profiles: ["producao"]
+    restart: unless-stopped
+    environment:
+      DOMINIO: ${DOMINIO:-localhost}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infra/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_dados:/data
+      - caddy_config:/config
+    depends_on:
+      - bot
 
   chatwoot:
     image: chatwoot/chatwoot:${CHATWOOT_VERSAO:-v4.19.1-ce}
@@ -102,6 +122,8 @@ services:
       - bot
 
 volumes:
+  caddy_dados:
+  caddy_config:
   prontuarios:
   postgres_dados:
   redis_dados:

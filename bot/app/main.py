@@ -45,7 +45,19 @@ async def ciclo_de_vida(app: FastAPI):
 
 app = FastAPI(title="Central Odonto", lifespan=ciclo_de_vida)
 app.mount("/static", StaticFiles(directory=str(Path(__file__).parent / "static")), name="static")
-app.add_middleware(SessionMiddleware, secret_key=config.CHAVE_SESSAO, max_age=12 * 3600, same_site="lax")
+app.add_middleware(SessionMiddleware, secret_key=config.CHAVE_SESSAO, max_age=12 * 3600, same_site="lax",
+                   https_only=config.COOKIE_SEGURO)
+
+
+@app.middleware("http")
+async def cabecalhos_de_seguranca(request, call_next):
+    resp = await call_next(request)
+    resp.headers.setdefault("X-Content-Type-Options", "nosniff")
+    resp.headers.setdefault("X-Frame-Options", "DENY")
+    resp.headers.setdefault("Referrer-Policy", "same-origin")
+    if config.COOKIE_SEGURO:
+        resp.headers.setdefault("Strict-Transport-Security", "max-age=31536000")
+    return resp
 
 
 @app.get("/saude")

@@ -1,0 +1,13 @@
+# Caddy: HTTPS automático para o domínio definido em DOMINIO (.env)
+{$DOMINIO} {
+	encode gzip
+	# limite de envio (fotos/PDF do prontuário até 20 MB)
+	request_body {
+		max_size 25MB
+	}
+	reverse_proxy bot:8000
+}
+
+www.{$DOMINIO} {
+	redir https://{$DOMINIO}{uri} permanent
+}
